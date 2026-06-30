@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from 'react';
+import { createClient } from 'genlayer-js';
+import { studionet } from 'genlayer-js/chains';
 import { createWalletClient, custom, publicActions } from 'viem';
 import { Search, Wallet, Loader2, LogOut, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,22 +11,7 @@ import ChartBackground from '@/components/ChartBackground';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xEe217957a35813c4ef4a7686046749ed99dD28F9";
 
-const abi = [
-  {
-    "inputs": [{"name": "ticker", "type": "string"}],
-    "name": "analyze_token",
-    "outputs": [{"name": "", "type": "string"}],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"name": "ticker", "type": "string"}],
-    "name": "get_token_analysis",
-    "outputs": [{"name": "", "type": "string"}],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
+// Note: ABI is no longer required because genlayer-js handles GenLayer Simulator interactions dynamically!
 
 // Framer Motion Variants for Futuristic Text
 const containerVariants: import("framer-motion").Variants = {
@@ -116,17 +103,22 @@ export default function Home() {
     setTokenData(null);
 
     try {
-      const hash = await wallet.writeContract({
-        address: CONTRACT_ADDRESS as `0x${string}`,
-        abi,
-        functionName: 'analyze_token',
-        args: [ticker],
-        account: address,
-        gas: BigInt(5000000), // Hardcode gas to bypass eth_estimateGas which fails on GenLayer non-deterministic calls
-        chain: null // Tell Viem to let MetaMask handle the chain routing
+      // Create the official genlayer-js client
+      const client = createClient({
+        chain: studionet,
+        account: address as `0x${string}`,
+        provider: (window as any).ethereum,
       });
 
-      const receipt = await wallet.waitForTransactionReceipt({ hash });
+      // Execute the intelligent contract method through the GenLayer Gateway
+      const hash = await client.writeContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        functionName: 'analyze_token',
+        args: [ticker],
+        value: 0n,
+      });
+
+      const receipt = await client.waitForTransactionReceipt({ hash });
       
       if (receipt.status === 'reverted') {
         throw new Error(`The GenLayer transaction reverted! Please check the GenLayer Studio explorer for the transaction hash: ${hash}`);
@@ -138,9 +130,8 @@ export default function Home() {
       // Poll for the asynchronous AI consensus to finish
       while (attempts < 20) {
         try {
-          dataString = await wallet.readContract({
+          dataString = await client.readContract({
             address: CONTRACT_ADDRESS as `0x${string}`,
-            abi,
             functionName: 'get_token_analysis',
             args: [ticker]
           });
