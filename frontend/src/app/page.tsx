@@ -129,7 +129,7 @@ export default function Home() {
       <ChartBackground />
       
       {/* Navbar */}
-      <nav className="w-full flex justify-between items-center mb-10 glass-panel px-4 md:px-10 py-3 md:py-4 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/40 backdrop-blur-3xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <nav className="w-full flex justify-between items-center mb-10 glass-panel px-4 md:px-10 py-3 md:py-2 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/40 backdrop-blur-3xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-3">
           <span style={{ fontFamily: 'var(--font-syncopate)' }} className="text-sm sm:text-base md:text-xl font-black tracking-wider md:tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-slate-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
             TokenIntel
