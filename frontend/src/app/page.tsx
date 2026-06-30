@@ -122,7 +122,7 @@ export default function Home() {
         functionName: 'analyze_token',
         args: [ticker],
         account: address,
-        gas: 5000000n // Hardcode gas to bypass eth_estimateGas which fails on GenLayer non-deterministic calls
+        gas: BigInt(5000000) // Hardcode gas to bypass eth_estimateGas which fails on GenLayer non-deterministic calls
       });
 
       await wallet.waitForTransactionReceipt({ hash });
