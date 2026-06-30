@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { createWalletClient, custom, publicActions, getContract } from 'viem';
-import { Search, Wallet, Link, Loader2 } from 'lucide-react';
+import { createWalletClient, custom, publicActions } from 'viem';
+import { Search, Wallet, Loader2, LogOut } from 'lucide-react';
 import TokenDashboard, { TokenData } from '@/components/TokenDashboard';
+
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 
 const abi = [
   {
@@ -25,7 +27,6 @@ const abi = [
 export default function Home() {
   const [wallet, setWallet] = useState<any>(null);
   const [address, setAddress] = useState<string>('');
-  const [contractAddress, setContractAddress] = useState<string>('');
   const [ticker, setTicker] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
@@ -49,13 +50,14 @@ export default function Home() {
     }
   };
 
+  const disconnectWallet = () => {
+    setWallet(null);
+    setAddress('');
+  };
+
   const analyzeToken = async () => {
     if (!wallet || !address) {
       setError("Please connect your wallet first.");
-      return;
-    }
-    if (!contractAddress) {
-      setError("Please enter the deployed contract address.");
       return;
     }
     if (!ticker) {
@@ -70,7 +72,7 @@ export default function Home() {
     try {
       // 1. Submit the transaction to analyze the token (consensus generation)
       const { request } = await wallet.simulateContract({
-        address: contractAddress as `0x${string}`,
+        address: CONTRACT_ADDRESS as `0x${string}`,
         abi,
         functionName: 'analyze_token',
         args: [ticker],
@@ -84,7 +86,7 @@ export default function Home() {
 
       // 2. Fetch the analyzed data (JSON string)
       const dataString = await wallet.readContract({
-        address: contractAddress as `0x${string}`,
+        address: CONTRACT_ADDRESS as `0x${string}`,
         abi,
         functionName: 'get_token_analysis',
         args: [ticker]
@@ -115,13 +117,31 @@ export default function Home() {
           </div>
           <span className="text-xl font-bold tracking-wide">TokenIntel</span>
         </div>
-        <button 
-          onClick={connectWallet}
-          className="glass-btn px-6 py-2 rounded-full font-medium flex items-center gap-2"
-        >
-          <Wallet size={18} />
-          {address ? `${address.substring(0, 6)}...${address.substring(38)}` : "Connect Wallet"}
-        </button>
+        
+        {address ? (
+          <div className="flex items-center gap-3">
+            <div className="glass-panel px-4 py-2 rounded-full font-medium flex items-center gap-2 border-emerald-500/30 text-emerald-100">
+              <Wallet size={16} className="text-emerald-400" />
+              {`${address.substring(0, 6)}...${address.substring(38)}`}
+            </div>
+            <button 
+              onClick={disconnectWallet}
+              className="glass-btn px-4 py-2 rounded-full font-medium flex items-center gap-2 hover:bg-rose-500/20 text-rose-200"
+              title="Disconnect Wallet"
+            >
+              <LogOut size={16} />
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={connectWallet}
+            className="glass-btn px-6 py-2 rounded-full font-medium flex items-center gap-2"
+          >
+            <Wallet size={18} />
+            Connect Wallet
+          </button>
+        )}
       </nav>
 
       {/* Hero Section */}
@@ -138,17 +158,6 @@ export default function Home() {
 
         {/* Input Controls */}
         <div className="w-full space-y-4 pt-4">
-          <div className="relative">
-            <Link className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input 
-              type="text" 
-              placeholder="Deployed Genlayer Contract Address (0x...)" 
-              className="w-full glass-input py-4 pl-12 pr-4 rounded-2xl text-lg"
-              value={contractAddress}
-              onChange={(e) => setContractAddress(e.target.value)}
-            />
-          </div>
-          
           <div className="relative flex items-center">
             <Search className="absolute left-4 text-slate-400" size={20} />
             <input 
@@ -161,7 +170,7 @@ export default function Home() {
             />
             <button 
               onClick={analyzeToken}
-              disabled={loading || !ticker || !contractAddress}
+              disabled={loading || !ticker}
               className="absolute right-2 top-2 bottom-2 glass-btn px-6 rounded-xl font-semibold flex items-center gap-2"
             >
               {loading ? <Loader2 className="animate-spin" size={18} /> : "Analyze"}
