@@ -12,12 +12,6 @@ class TokenIntel(gl.Contract):
 
     @gl.public.write
     def analyze_token(self, ticker: str) -> typing.Any:
-        def get_input() -> str:
-            result = gl.nondet.exec_prompt(task_prompt)
-            # Ensure markdown formatting is stripped if the LLM includes it
-            result = result.replace("```json", "").replace("```", "").strip()
-            return result
-        
         # We instruct the validators to browse/search the internet for the token 
         # and extract the exact fields requested, returning them as a JSON object.
         task_prompt = f"""
@@ -54,19 +48,17 @@ class TokenIntel(gl.Contract):
         
         Do not include any markdown formatting like ```json ... ```, just output the raw JSON string.
         """
-        
-        criteria_prompt = """
-        The response MUST be a valid, parseable JSON object.
-        It must contain all 26 keys exactly as specified in the task.
-        The data must be plausible and reflect the most current public information available on the web for this ticker.
-        There must be no extra text outside the JSON object.
-        """
 
-        # Ask validators to run the task, judge results, and reach consensus
-        result = gl.eq_principle.prompt_non_comparative(
+        def get_input() -> str:
+            result = gl.nondet.exec_prompt(task_prompt)
+            # Ensure markdown formatting is stripped if the LLM includes it
+            result = result.replace("```json", "").replace("```", "").strip()
+            return result
+        
+        # Ask validators to run the task, compare results, and reach consensus
+        result = gl.eq_principle.prompt_comparative(
             get_input,
-            task=task_prompt,
-            criteria=criteria_prompt,
+            "The generated outputs must both be valid JSON objects containing the 26 requested keys. The general market information and facts must match, allowing for slight variations in real-time pricing data or subjective analysis."
         )
         
         # Save to persistent state
