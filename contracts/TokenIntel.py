@@ -51,11 +51,19 @@ class TokenIntel(gl.Contract):
         """
 
         def get_input() -> str:
-            # We pass the WebSearch provider so the LLM actually connects to the internet!
-            result = gl.nondet.exec_prompt(
-                task_prompt,
-                providers=[gl.providers.WebSearch()]
-            )
+            # Fetch real-time market data directly using GenLayer's web module!
+            market_url = f"https://min-api.cryptocompare.com/data/pricemultifull?fsyms={ticker.upper()}&tsyms=USD"
+            try:
+                # gl.nondet.web.get fetches the URL and returns a response object with a .body attribute
+                response = gl.nondet.web.get(market_url)
+                market_data = response.body.decode("utf-8")
+            except:
+                market_data = "Failed to fetch real-time API data."
+
+            # Inject the real-time data into the prompt for the AI to parse!
+            full_prompt = task_prompt + f"\n\nUse the following real-time market data to populate your JSON:\n{market_data}"
+
+            result = gl.nondet.exec_prompt(full_prompt)
             # Ensure markdown formatting is stripped if the LLM includes it
             result = result.replace("```json", "").replace("```", "").strip()
             return result
