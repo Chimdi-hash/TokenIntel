@@ -12,14 +12,11 @@ class TokenIntel(gl.Contract):
 
     @gl.public.write
     def analyze_token(self, ticker: str) -> typing.Any:
-        # Non-deterministic function to fetch raw data using GenVM's web module
         def get_input() -> str:
-            # We fetch data from a public aggregator or search endpoints
-            # To avoid needing an API key, we fetch the CoinGecko search endpoint 
-            # and then fetch the coin data. 
-            # Wait, since Genlayer LLM validators are powerful, we can also instruct them 
-            # to search the web for the given ticker directly if the input is just the ticker.
-            return f"Analyze the cryptocurrency: {ticker}"
+            result = gl.nondet.exec_prompt(task_prompt)
+            # Ensure markdown formatting is stripped if the LLM includes it
+            result = result.replace("```json", "").replace("```", "").strip()
+            return result
         
         # We instruct the validators to browse/search the internet for the token 
         # and extract the exact fields requested, returning them as a JSON object.
