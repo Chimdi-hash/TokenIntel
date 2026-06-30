@@ -167,7 +167,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <motion.div 
-        className="w-full max-w-4xl flex flex-col items-center text-center space-y-8 mt-10 md:mt-20 z-10"
+        className="w-full max-w-4xl flex flex-col items-center text-center space-y-8 mt-2 md:mt-8 z-10"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -198,14 +198,14 @@ export default function Home() {
         </motion.p>
 
         {/* Input Controls */}
-        <motion.div variants={itemVariants} className="w-full max-w-xl space-y-4 pt-8">
+        <motion.div variants={itemVariants} className="w-full max-w-2xl space-y-4 pt-6">
           <div className="relative flex items-center group">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-            <Search className="absolute left-5 text-indigo-300 z-10" size={24} />
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
+            <Search className="absolute left-5 text-indigo-300 z-10" size={20} />
             <input 
               type="text" 
               placeholder="ENTER TOKEN TICKER (e.g. BTC)" 
-              className="w-full relative z-10 bg-black/40 backdrop-blur-xl border-2 border-white/10 py-5 pl-14 pr-36 rounded-2xl text-xl uppercase text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:bg-black/60 transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] font-bold tracking-wider"
+              className="w-full relative z-10 bg-black/40 backdrop-blur-xl border-2 border-white/10 py-3 pl-12 pr-36 rounded-full text-lg uppercase text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:bg-black/60 transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] font-bold tracking-wider"
               value={ticker}
               onChange={(e) => setTicker(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === 'Enter' && analyzeToken()}
@@ -213,17 +213,17 @@ export default function Home() {
             <button 
               onClick={analyzeToken}
               disabled={loading || !ticker}
-              className="absolute z-20 right-2 top-2 bottom-2 glass-btn px-6 rounded-xl font-bold flex items-center gap-2 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all"
+              className="absolute z-20 right-1.5 top-1.5 bottom-1.5 glass-btn px-6 rounded-full font-bold flex items-center gap-2 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all text-sm"
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin" size={20} />
-                  <span>SYNCING...</span>
+                  <Loader2 className="animate-spin" size={18} />
+                  <span>SYNCING</span>
                 </>
               ) : (
                 <>
                   <span>ANALYZE</span>
-                  <ChevronRight size={20} />
+                  <ChevronRight size={18} />
                 </>
               )}
             </button>
