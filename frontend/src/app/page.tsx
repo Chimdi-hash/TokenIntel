@@ -62,11 +62,11 @@ export default function Home() {
         
         const [account] = await walletClient.requestAddresses();
         
-        // Auto-switch to Genlayer Testnet
+        // Auto-switch to Genlayer Studionet
         try {
           await (window as any).ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x107d' }], // 4221 in hex
+            params: [{ chainId: '0xf22f' }], // 61999 in hex
           });
         } catch (switchError: any) {
           if (switchError.code === 4902 || switchError.code === -32603) {
@@ -74,14 +74,14 @@ export default function Home() {
               await (window as any).ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: '0x107d',
-                  chainName: 'Genlayer Testnet',
+                  chainId: '0xf22f',
+                  chainName: 'Genlayer Studio',
                   nativeCurrency: { name: 'GEN', symbol: 'GEN', decimals: 18 },
-                  rpcUrls: ['https://rpc.testnet-chain.genlayer.com'],
+                  rpcUrls: ['https://studio.genlayer.com/api'],
                 }]
               });
             } catch (addError) {
-              console.error('Failed to add Genlayer Testnet:', addError);
+              console.error('Failed to add Genlayer Studio:', addError);
             }
           }
         }
