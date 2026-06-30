@@ -132,7 +132,7 @@ export default function Home() {
       <nav className="w-full flex justify-between items-center mb-10 glass-panel px-6 md:px-10 py-2 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/20 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="TokenIntel" className="w-8 h-8 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-white/20 object-cover" />
-          <span className="font-syncopate text-lg font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 hidden sm:block">
+          <span style={{ fontFamily: 'var(--font-syncopate)' }} className="text-lg font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 hidden sm:block">
             TokenIntel
           </span>
         </div>
@@ -180,7 +180,8 @@ export default function Home() {
 
         <motion.h1 
           variants={itemVariants} 
-          className="font-orbitron text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-tight"
+          style={{ fontFamily: 'var(--font-orbitron)' }}
+          className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-tight"
         >
           Decentralized <br/>
           <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-indigo-400 to-purple-400 drop-shadow-[0_0_30px_rgba(99,102,241,0.4)]">
