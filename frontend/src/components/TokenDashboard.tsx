@@ -36,7 +36,7 @@ export interface TokenData {
   latest_news: string;
 }
 
-const containerVariants = {
+const containerVariants: import("framer-motion").Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -46,7 +46,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: import("framer-motion").Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
