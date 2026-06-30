@@ -134,8 +134,8 @@ export default function Home() {
       let dataString: any = "{}";
       let attempts = 0;
       
-      // Poll for the asynchronous AI consensus to finish (can take up to 2-3 mins with web search)
-      while (attempts < 90) {
+      // Poll for the asynchronous AI consensus to finish (can take up to 3-5 mins with web search)
+      while (attempts < 150) {
         try {
           dataString = await client.readContract({
             address: CONTRACT_ADDRESS as `0x${string}`,
