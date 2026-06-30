@@ -115,7 +115,7 @@ export default function Home() {
         address: CONTRACT_ADDRESS as `0x${string}`,
         functionName: 'analyze_token',
         args: [ticker],
-        value: 0n,
+        value: BigInt(0),
       });
 
       const receipt = await client.waitForTransactionReceipt({ hash });
