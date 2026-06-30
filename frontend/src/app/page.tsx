@@ -61,6 +61,31 @@ export default function Home() {
         }).extend(publicActions);
         
         const [account] = await walletClient.requestAddresses();
+        
+        // Auto-switch to Genlayer Testnet
+        try {
+          await (window as any).ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x107d' }], // 4221 in hex
+          });
+        } catch (switchError: any) {
+          if (switchError.code === 4902 || switchError.code === -32603) {
+            try {
+              await (window as any).ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x107d',
+                  chainName: 'Genlayer Testnet',
+                  nativeCurrency: { name: 'GEN', symbol: 'GEN', decimals: 18 },
+                  rpcUrls: ['https://rpc.testnet-chain.genlayer.com'],
+                }]
+              });
+            } catch (addError) {
+              console.error('Failed to add Genlayer Testnet:', addError);
+            }
+          }
+        }
+
         setWallet(walletClient);
         setAddress(account);
       } catch (err: any) {
