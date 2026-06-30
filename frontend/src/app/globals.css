@@ -71,3 +71,12 @@ body {
   cursor: not-allowed;
   transform: none;
 }
+
+@keyframes chartScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-chart-scroll {
+  animation: chartScroll 45s linear infinite;
+}
