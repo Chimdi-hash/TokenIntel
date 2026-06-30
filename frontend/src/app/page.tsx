@@ -116,15 +116,15 @@ export default function Home() {
     setTokenData(null);
 
     try {
-      const { request } = await wallet.simulateContract({
+      const hash = await wallet.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi,
         functionName: 'analyze_token',
         args: [ticker],
-        account: address
+        account: address,
+        gas: 5000000n // Hardcode gas to bypass eth_estimateGas which fails on GenLayer non-deterministic calls
       });
 
-      const hash = await wallet.writeContract(request);
       await wallet.waitForTransactionReceipt({ hash });
 
       const dataString = await wallet.readContract({
