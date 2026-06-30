@@ -125,41 +125,41 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen p-4 md:p-8 flex flex-col items-center overflow-x-hidden">
+    <main className="relative min-h-screen px-4 pb-4 md:px-8 md:pb-8 flex flex-col items-center overflow-x-hidden">
       <ChartBackground />
       
       {/* Navbar */}
-      <nav className="w-full max-w-7xl flex justify-between items-center mb-16 glass-panel px-4 md:px-6 py-3 md:py-4 rounded-full z-20 sticky top-4">
+      <nav className="w-full flex justify-between items-center mb-10 glass-panel px-6 md:px-10 py-2 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/20 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center font-bold text-xl shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center font-bold text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-white/20">
             T
           </div>
-          <span className="text-xl font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 hidden sm:block">
+          <span className="text-lg font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 hidden sm:block">
             TokenIntel
           </span>
         </div>
         
         {address ? (
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="glass-panel px-3 md:px-4 py-2 rounded-full font-medium flex items-center gap-2 border-emerald-500/30 text-emerald-100 text-sm md:text-base">
-              <Wallet size={16} className="text-emerald-400 hidden sm:block" />
+            <div className="glass-panel px-3 py-1.5 rounded-full font-medium flex items-center gap-2 border-emerald-500/30 text-emerald-100 text-xs md:text-sm">
+              <Wallet size={14} className="text-emerald-400 hidden sm:block" />
               {`${address.substring(0, 4)}...${address.substring(38)}`}
             </div>
             <button 
               onClick={disconnectWallet}
-              className="glass-btn px-3 md:px-4 py-2 rounded-full font-medium flex items-center gap-2 hover:bg-rose-500/20 text-rose-200"
+              className="glass-btn px-3 py-1.5 rounded-full font-medium flex items-center gap-2 hover:bg-rose-500/20 text-rose-200 text-xs md:text-sm"
               title="Disconnect Wallet"
             >
-              <LogOut size={16} />
+              <LogOut size={14} />
               <span className="hidden sm:block">Disconnect</span>
             </button>
           </div>
         ) : (
           <button 
             onClick={connectWallet}
-            className="glass-btn px-4 md:px-6 py-2 rounded-full font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
+            className="glass-btn px-4 md:px-5 py-1.5 rounded-full font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] text-sm"
           >
-            <Wallet size={18} />
+            <Wallet size={16} />
             Connect Wallet
           </button>
         )}
