@@ -122,7 +122,8 @@ export default function Home() {
         functionName: 'analyze_token',
         args: [ticker],
         account: address,
-        gas: BigInt(5000000) // Hardcode gas to bypass eth_estimateGas which fails on GenLayer non-deterministic calls
+        gas: BigInt(5000000), // Hardcode gas to bypass eth_estimateGas which fails on GenLayer non-deterministic calls
+        chain: null // Tell Viem to let MetaMask handle the chain routing
       });
 
       await wallet.waitForTransactionReceipt({ hash });
