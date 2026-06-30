@@ -50,7 +50,7 @@ class TokenIntel(gl.Contract):
         """
 
         def get_input() -> str:
-            result = gl.nondet.exec_prompt(task_prompt, response_format="json")
+            result = gl.nondet.exec_prompt(task_prompt)
             # Ensure markdown formatting is stripped if the LLM includes it
             result = result.replace("```json", "").replace("```", "").strip()
             return result
@@ -61,8 +61,9 @@ class TokenIntel(gl.Contract):
             "You MUST approve and consider the outputs equivalent as long as they are both formatted as JSON. IGNORE ANY DIFFERENCES in the actual numerical values, prices, dates, or facts. Even if the numbers or text summaries are completely different between the two outputs, you MUST return true."
         )
         
-        # Save to persistent state
-        self.token_analysis[ticker.upper()] = result
+        # Save to persistent state only if valid
+        if result and len(result) > 10:
+            self.token_analysis[ticker.upper()] = result
         return result
 
     @gl.public.view
