@@ -15,8 +15,8 @@ class TokenIntel(gl.Contract):
         # We instruct the validators to browse/search the internet for the token 
         # and extract the exact fields requested, returning them as a JSON object.
         task_prompt = f"""
-        You are a cryptocurrency analyst. Your task is to return information regarding the cryptocurrency with the ticker '{ticker}'.
-        If you do not have real-time web access, you MUST use your existing knowledge to estimate the values.
+        You are a cryptocurrency analyst with LIVE WEB ACCESS. Your task is to use your web search capabilities to find the real-time, current prices and statistics regarding the cryptocurrency with the ticker '{ticker}'.
+        You MUST search the web to get the most accurate, real-time data for today.
         DO NOT output any apologies or conversational text like "I cannot browse". You must ONLY output a raw JSON object.
         
         Extract and return ONLY a valid JSON object with the following exact keys:
@@ -51,7 +51,11 @@ class TokenIntel(gl.Contract):
         """
 
         def get_input() -> str:
-            result = gl.nondet.exec_prompt(task_prompt)
+            # We pass the WebSearch provider so the LLM actually connects to the internet!
+            result = gl.nondet.exec_prompt(
+                task_prompt,
+                providers=[gl.providers.WebSearch()]
+            )
             # Ensure markdown formatting is stripped if the LLM includes it
             result = result.replace("```json", "").replace("```", "").strip()
             return result
