@@ -129,22 +129,22 @@ export default function Home() {
       <ChartBackground />
       
       {/* Navbar */}
-      <nav className="w-full flex justify-between items-center mb-10 glass-panel px-6 md:px-10 py-2 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/20 backdrop-blur-2xl">
+      <nav className="w-full flex justify-between items-center mb-10 glass-panel px-4 md:px-10 py-3 md:py-4 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/40 backdrop-blur-3xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-3">
-          <span style={{ fontFamily: 'var(--font-syncopate)' }} className="text-xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-slate-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+          <span style={{ fontFamily: 'var(--font-syncopate)' }} className="text-sm sm:text-base md:text-xl font-black tracking-wider md:tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-slate-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
             TokenIntel
           </span>
         </div>
         
         {address ? (
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="glass-panel px-3 py-1.5 rounded-full font-medium flex items-center gap-2 border-emerald-500/30 text-emerald-100 text-xs md:text-sm">
+            <div className="glass-panel px-3 py-1.5 md:py-2 rounded-full font-medium flex items-center gap-2 border-emerald-500/30 text-emerald-100 text-[10px] sm:text-xs md:text-sm">
               <Wallet size={14} className="text-emerald-400 hidden sm:block" />
               {`${address.substring(0, 4)}...${address.substring(38)}`}
             </div>
             <button 
               onClick={disconnectWallet}
-              className="glass-btn px-3 py-1.5 rounded-full font-medium flex items-center gap-2 hover:bg-rose-500/20 text-rose-200 text-xs md:text-sm"
+              className="glass-btn px-2 md:px-3 py-1.5 md:py-2 rounded-full font-medium flex items-center gap-2 hover:bg-rose-500/20 text-rose-200 text-xs md:text-sm"
               title="Disconnect Wallet"
             >
               <LogOut size={14} />
@@ -154,10 +154,11 @@ export default function Home() {
         ) : (
           <button 
             onClick={connectWallet}
-            className="glass-btn px-4 md:px-5 py-1.5 rounded-full font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] text-sm"
+            className="glass-btn px-3 md:px-5 py-2 md:py-2.5 rounded-full font-bold flex items-center gap-1.5 md:gap-2 shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] text-xs md:text-sm"
           >
-            <Wallet size={16} />
-            Connect Wallet
+            <Wallet className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">Connect Wallet</span>
+            <span className="sm:hidden">Connect</span>
           </button>
         )}
       </nav>
