@@ -133,22 +133,32 @@ export default function Home() {
       }
 
       let dataString: any = "{}";
-      try {
-        dataString = await wallet.readContract({
-          address: CONTRACT_ADDRESS as `0x${string}`,
-          abi,
-          functionName: 'get_token_analysis',
-          args: [ticker]
-        });
-      } catch (readErr: any) {
-        if (readErr.message?.includes('out of bounds') || readErr.message?.includes('Position')) {
-          throw new Error(`Contract execution finished, but the Token data wasn't saved. The AI validators likely rejected the consensus and reverted silently.`);
+      let attempts = 0;
+      
+      // Poll for the asynchronous AI consensus to finish
+      while (attempts < 20) {
+        try {
+          dataString = await wallet.readContract({
+            address: CONTRACT_ADDRESS as `0x${string}`,
+            abi,
+            functionName: 'get_token_analysis',
+            args: [ticker]
+          });
+          
+          if (dataString && dataString !== "{}" && dataString.length > 10) {
+            break; // Data successfully populated by validators!
+          }
+        } catch (readErr: any) {
+          // Ignore Viem decoding errors (like "Position 32 out of bounds") 
+          // because they just mean the state is still empty while the AI thinks.
         }
-        throw readErr;
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
       }
 
-      if (!dataString || dataString === "{}") {
-        throw new Error("No data returned from validators. The consensus might have failed.");
+      if (!dataString || dataString === "{}" || dataString.length <= 10) {
+        throw new Error("Timeout: The AI validators took too long to reach consensus or the transaction was rejected. Please try again.");
       }
 
       const parsedData: TokenData = JSON.parse(dataString as string);
