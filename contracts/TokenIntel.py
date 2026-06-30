@@ -8,7 +8,7 @@ class TokenIntel(gl.Contract):
     token_analysis: TreeMap[str, str]
 
     def __init__(self):
-        pass
+        self.token_analysis = TreeMap()
 
     @gl.public.write
     def analyze_token(self, ticker: str) -> typing.Any:
