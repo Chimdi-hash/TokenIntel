@@ -182,7 +182,7 @@ export default function Home() {
 
         <motion.h1 
           variants={itemVariants} 
-          className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-tight"
+          className="font-orbitron text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-tight"
         >
           Decentralized <br/>
           <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-indigo-400 to-purple-400 drop-shadow-[0_0_30px_rgba(99,102,241,0.4)]">
