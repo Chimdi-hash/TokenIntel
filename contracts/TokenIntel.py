@@ -5,10 +5,10 @@ import json
 
 class TokenIntel(gl.Contract):
     # Persistent state variable to store token analysis results as JSON strings
-    token_analysis: dict
+    token_analysis: TreeMap[str, str]
 
     def __init__(self):
-        self.token_analysis = {}
+        pass
 
     @gl.public.write
     def analyze_token(self, ticker: str) -> typing.Any:
@@ -79,4 +79,7 @@ class TokenIntel(gl.Contract):
     @gl.public.view
     def get_token_analysis(self, ticker: str) -> str:
         # Retrieve the analyzed data if it exists, else return empty JSON
-        return self.token_analysis.get(ticker.upper(), "{}")
+        ticker = ticker.upper()
+        if ticker in self.token_analysis:
+            return self.token_analysis[ticker]
+        return "{}"
