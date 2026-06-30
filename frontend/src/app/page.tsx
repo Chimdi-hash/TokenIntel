@@ -118,10 +118,17 @@ export default function Home() {
         value: BigInt(0),
       });
 
-      const receipt = await client.waitForTransactionReceipt({ hash });
-      
-      if (String(receipt.status) === 'reverted' || receipt.status === 0) {
-        throw new Error(`The GenLayer transaction reverted! Please check the GenLayer Studio explorer for the transaction hash: ${hash}`);
+      try {
+        const receipt = await client.waitForTransactionReceipt({ hash });
+        if (String(receipt.status) === 'reverted' || receipt.status === 0) {
+          throw new Error(`The GenLayer transaction reverted! Please check the GenLayer Studio explorer for the transaction hash: ${hash}`);
+        }
+      } catch (err: any) {
+        // If it's a timeout, ignore it and let the polling loop check the state!
+        if (err.message && err.message.toLowerCase().includes('revert')) {
+          throw err;
+        }
+        console.log("waitForTransactionReceipt timeout or error, falling back to manual polling...", err);
       }
 
       let dataString: any = "{}";
