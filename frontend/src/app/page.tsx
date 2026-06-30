@@ -125,15 +125,13 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen px-4 pb-4 md:px-8 md:pb-8 flex flex-col items-center overflow-x-hidden">
+    <main className="w-full relative min-h-screen pb-4 md:pb-8 flex flex-col items-center overflow-x-hidden">
       <ChartBackground />
       
       {/* Navbar */}
       <nav className="w-full flex justify-between items-center mb-10 glass-panel px-6 md:px-10 py-2 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/20 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center font-bold text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-white/20">
-            T
-          </div>
+          <img src="/logo.png" alt="TokenIntel" className="w-8 h-8 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-white/20 object-cover" />
           <span className="text-lg font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 hidden sm:block">
             TokenIntel
           </span>
@@ -167,7 +165,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <motion.div 
-        className="w-full max-w-4xl flex flex-col items-center text-center space-y-8 mt-2 md:mt-8 z-10"
+        className="w-full max-w-4xl px-4 flex flex-col items-center text-center space-y-8 mt-2 md:mt-8 z-10"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -243,7 +241,7 @@ export default function Home() {
 
       {/* Dashboard Result */}
       {tokenData && (
-        <div className="w-full z-20 mt-12 mb-20 relative">
+        <div className="w-full z-20 mt-12 mb-20 relative px-4">
           <TokenDashboard data={tokenData} />
         </div>
       )}
