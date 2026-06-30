@@ -126,17 +126,29 @@ export default function Home() {
         chain: null // Tell Viem to let MetaMask handle the chain routing
       });
 
-      await wallet.waitForTransactionReceipt({ hash });
+      const receipt = await wallet.waitForTransactionReceipt({ hash });
+      
+      if (receipt.status === 'reverted') {
+        throw new Error(`The GenLayer transaction reverted! Please check the GenLayer Studio explorer for the transaction hash: ${hash}`);
+      }
 
-      const dataString = await wallet.readContract({
-        address: CONTRACT_ADDRESS as `0x${string}`,
-        abi,
-        functionName: 'get_token_analysis',
-        args: [ticker]
-      });
+      let dataString: any = "{}";
+      try {
+        dataString = await wallet.readContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi,
+          functionName: 'get_token_analysis',
+          args: [ticker]
+        });
+      } catch (readErr: any) {
+        if (readErr.message?.includes('out of bounds') || readErr.message?.includes('Position')) {
+          throw new Error(`Contract execution finished, but the Token data wasn't saved. The AI validators likely rejected the consensus and reverted silently.`);
+        }
+        throw readErr;
+      }
 
       if (!dataString || dataString === "{}") {
-        throw new Error("No data returned from validators.");
+        throw new Error("No data returned from validators. The consensus might have failed.");
       }
 
       const parsedData: TokenData = JSON.parse(dataString as string);
