@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import TokenDashboard, { TokenData } from '@/components/TokenDashboard';
 import ChartBackground from '@/components/ChartBackground';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xEB6a70c606b395cf0Ea2Ef3994210EEaA8611511";
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x94F259B63b4144DC55a30a5E58026811559e4EE6";
 
 const abi = [
   {
