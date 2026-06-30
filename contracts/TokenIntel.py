@@ -51,24 +51,15 @@ class TokenIntel(gl.Contract):
         """
 
         def get_input() -> str:
-            # Fetch real-time market data directly using Binance API (highly reliable, no IP bans)
-            market_url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={ticker.upper()}USDT"
-            try:
-                response = gl.nondet.web.get(market_url)
-                market_data = response.body.decode("utf-8")
-            except:
-                # Fallback to CoinCap if Binance fails or symbol isn't listed with USDT
-                try:
-                    fallback_url = f"https://api.coincap.io/v2/assets/{ticker.lower()}"
-                    response = gl.nondet.web.get(fallback_url)
-                    market_data = response.body.decode("utf-8")
-                except:
-                    market_data = "Failed to fetch real-time API data."
-
-            # Inject the real-time data into the prompt for the AI to parse!
-            full_prompt = task_prompt + f"\n\nCRITICAL INSTRUCTION: You MUST use the following real-time API data to precisely populate the price_usd, volume_24h_usd, and price_change_24h_percent fields. DO NOT HALLUCINATE PRICES:\n{market_data}"
-
-            result = gl.nondet.exec_prompt(full_prompt)
+            # We use the built-in GenLayer WebSearch provider which is optimized for validator nodes
+            # and won't get blocked by external API Cloudflare protections.
+            search_prompt = task_prompt + f"\n\nCRITICAL INSTRUCTION: You MUST use your WebSearch provider to search the live internet for the EXACT CURRENT price and 24h volume of {ticker}. DO NOT hallucinate or use old training data. Search for 'current live price of {ticker} crypto today'."
+            
+            result = gl.nondet.exec_prompt(
+                search_prompt,
+                providers=[gl.providers.WebSearch()]
+            )
+            
             # Ensure markdown formatting is stripped if the LLM includes it
             result = result.replace("```json", "").replace("```", "").strip()
             return result
