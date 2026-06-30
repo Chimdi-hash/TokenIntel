@@ -131,8 +131,7 @@ export default function Home() {
       {/* Navbar */}
       <nav className="w-full flex justify-between items-center mb-10 glass-panel px-6 md:px-10 py-2 z-20 sticky top-0 border-t-0 border-x-0 rounded-none bg-black/20 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="TokenIntel" className="w-8 h-8 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-white/20 object-cover" />
-          <span style={{ fontFamily: 'var(--font-syncopate)' }} className="text-lg font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 hidden sm:block">
+          <span style={{ fontFamily: 'var(--font-syncopate)' }} className="text-xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-slate-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
             TokenIntel
           </span>
         </div>
@@ -200,11 +199,11 @@ export default function Home() {
         <motion.div variants={itemVariants} className="w-full max-w-2xl space-y-4 pt-6">
           <div className="relative flex items-center group">
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-            <Search className="absolute left-5 text-indigo-300 z-10" size={20} />
+            <Search className="absolute left-3 md:left-5 text-indigo-300 z-10 w-4 h-4 md:w-5 md:h-5" />
             <input 
               type="text" 
-              placeholder="ENTER TOKEN TICKER (e.g. BTC)" 
-              className="w-full relative z-10 bg-black/40 backdrop-blur-xl border-2 border-white/10 py-3 pl-12 pr-36 rounded-full text-lg uppercase text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:bg-black/60 transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] font-bold tracking-wider"
+              placeholder="ENTER TOKEN (E.G. BTC)" 
+              className="w-full relative z-10 bg-black/40 backdrop-blur-xl border-2 border-white/10 py-2.5 md:py-3 pl-9 md:pl-12 pr-28 md:pr-36 rounded-full text-sm md:text-lg uppercase text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:bg-black/60 transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] font-bold tracking-wider"
               value={ticker}
               onChange={(e) => setTicker(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === 'Enter' && analyzeToken()}
@@ -212,17 +211,18 @@ export default function Home() {
             <button 
               onClick={analyzeToken}
               disabled={loading || !ticker}
-              className="absolute z-20 right-1.5 top-1.5 bottom-1.5 glass-btn px-6 rounded-full font-bold flex items-center gap-2 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all text-sm"
+              className="absolute z-20 right-1.5 top-1.5 bottom-1.5 glass-btn px-4 md:px-6 rounded-full font-bold flex items-center gap-1.5 md:gap-2 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all text-xs md:text-sm"
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin" size={18} />
-                  <span>SYNCING</span>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span className="hidden sm:inline">SYNCING</span>
                 </>
               ) : (
                 <>
-                  <span>ANALYZE</span>
-                  <ChevronRight size={18} />
+                  <span className="hidden sm:inline">ANALYZE</span>
+                  <span className="sm:hidden">GO</span>
+                  <ChevronRight size={16} />
                 </>
               )}
             </button>
