@@ -120,7 +120,7 @@ export default function Home() {
 
       const receipt = await client.waitForTransactionReceipt({ hash });
       
-      if (receipt.status === 'reverted') {
+      if (String(receipt.status) === 'reverted' || receipt.status === 0) {
         throw new Error(`The GenLayer transaction reverted! Please check the GenLayer Studio explorer for the transaction hash: ${hash}`);
       }
 
