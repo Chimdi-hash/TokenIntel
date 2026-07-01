@@ -128,6 +128,17 @@ export default function Home() {
         console.warn("Failed to fetch live market data from API route", e);
       }
 
+      // Read the existing cached value BEFORE submitting the transaction.
+      // This lets us detect when a NEW result replaces the old one after consensus.
+      let previousDataString = "{}";
+      try {
+        previousDataString = await client.readContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          functionName: 'get_token_analysis',
+          args: [ticker]
+        }) as string || "{}";
+      } catch (_) {}
+
       // Execute the intelligent contract method through the GenLayer Gateway
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -139,20 +150,18 @@ export default function Home() {
       try {
         const receipt = await client.waitForTransactionReceipt({ hash });
         if (String(receipt.status) === 'reverted' || receipt.status === 0) {
-          throw new Error(`The GenLayer transaction reverted! Please check the GenLayer Studio explorer for the transaction hash: ${hash}`);
+          throw new Error(`The GenLayer transaction reverted!`);
         }
       } catch (err: any) {
-        // If it's a timeout, ignore it and let the polling loop check the state!
-        if (err.message && err.message.toLowerCase().includes('revert')) {
-          throw err;
-        }
-        console.log("waitForTransactionReceipt timeout or error, falling back to manual polling...", err);
+        if (err.message && err.message.toLowerCase().includes('revert')) throw err;
+        console.log("waitForTransactionReceipt timeout, falling back to polling...", err);
       }
 
       let dataString: any = "{}";
       let attempts = 0;
       
-      // Poll for the asynchronous AI consensus to finish (can take up to 3-5 mins with web search)
+      // Poll for the asynchronous AI consensus to finish.
+      // We wait until the result is DIFFERENT from what was cached before (i.e., a fresh result).
       while (attempts < 150) {
         try {
           dataString = await client.readContract({
@@ -161,20 +170,27 @@ export default function Home() {
             args: [ticker]
           });
           
-          if (dataString && dataString !== "{}" && dataString.length > 10) {
-            break; // Data successfully populated by validators!
+          // Break only when we have data AND it's different from the pre-transaction snapshot
+          const hasData = dataString && dataString !== "{}" && dataString.length > 10;
+          const isNew = dataString !== previousDataString;
+          if (hasData && isNew) {
+            break;
           }
         } catch (readErr: any) {
-          // Ignore Viem decoding errors (like "Position 32 out of bounds") 
-          // because they just mean the state is still empty while the AI thinks.
+          // Ignore decode errors — state is still empty while AI thinks
         }
         
         attempts++;
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
+      // If we never got new data, fall back to previous cached result if it exists
       if (!dataString || dataString === "{}" || dataString.length <= 10) {
-        throw new Error("Timeout: The AI validators took too long to reach consensus or the transaction was rejected. Please try again.");
+        if (previousDataString && previousDataString !== "{}" && previousDataString.length > 10) {
+          dataString = previousDataString;
+        } else {
+          throw new Error("Timeout: The AI validators took too long. Please try again.");
+        }
       }
 
       const parsedData: TokenData = JSON.parse(dataString as string);
