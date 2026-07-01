@@ -110,22 +110,17 @@ export default function Home() {
         provider: (window as any).ethereum,
       });
 
-      // Fetch live market data via our Next.js serverless API route!
-      // This completely bypasses any browser adblockers (like Brave Shields) or strict CORS policies
-      // because the request is made directly to our own domain, and Vercel's backend handles the external API call.
+      // Fetch live market data via our Next.js serverless API route (CoinGecko backend)
+      // This gives us EVERYTHING: price, market cap, volume, ATH, ATL, rank, supply, logo
       let liveMarketData = "Live market data unavailable";
-      let overridePrice: number | null = null;
-      let overrideVolume: number | null = null;
-      let overrideChange: number | null = null;
+      let coinGeckoData: any = null;
       
       try {
         const res = await fetch(`/api/price?ticker=${ticker}`);
         if (res.ok) {
-          const data = await res.json();
-          overridePrice = data.priceUsd;
-          overrideVolume = data.volumeUsd;
-          overrideChange = data.changePercent;
-          liveMarketData = `Live Price: $${overridePrice?.toFixed(4)}, 24h Volume: $${overrideVolume?.toFixed(2)}, 24h Change: ${overrideChange?.toFixed(2)}%`;
+          coinGeckoData = await res.json();
+          liveMarketData = `Live Price: $${Number(coinGeckoData.priceUsd).toFixed(6)}, Market Cap: $${Number(coinGeckoData.marketCapUsd).toFixed(0)}, 24h Volume: $${Number(coinGeckoData.volumeUsd).toFixed(0)}, 24h Change: ${Number(coinGeckoData.changePercent).toFixed(2)}%`;
+          console.log("CoinGecko data fetched:", coinGeckoData);
         } else {
           console.warn("API route returned an error:", await res.text());
         }
@@ -184,12 +179,25 @@ export default function Home() {
 
       const parsedData: TokenData = JSON.parse(dataString as string);
       
-      // GUARANTEE NO N/A PRICES: If the AI failed to extract the numbers from the prompt, 
-      // we strictly override them with the raw variables we already fetched!
-      if (overridePrice !== null) {
-        parsedData.price_usd = overridePrice;
-        parsedData.volume_24h_usd = overrideVolume || parsedData.volume_24h_usd;
-        parsedData.price_change_24h_percent = overrideChange || parsedData.price_change_24h_percent;
+      // GUARANTEE 100% ACCURATE DATA: Override ALL numerical fields with verified CoinGecko data.
+      // This ensures price, market cap, volume, ATH, ATL, rank, supply are always correct
+      // regardless of what the AI generated.
+      if (coinGeckoData) {
+        if (coinGeckoData.priceUsd != null)        parsedData.price_usd               = Number(coinGeckoData.priceUsd);
+        if (coinGeckoData.marketCapUsd != null)    parsedData.market_cap_usd          = Number(coinGeckoData.marketCapUsd);
+        if (coinGeckoData.volumeUsd != null)       parsedData.volume_24h_usd          = Number(coinGeckoData.volumeUsd);
+        if (coinGeckoData.changePercent != null)   parsedData.price_change_24h_percent = Number(coinGeckoData.changePercent);
+        if (coinGeckoData.athUsd != null)          parsedData.ath_usd                 = Number(coinGeckoData.athUsd);
+        if (coinGeckoData.athDate != null)         parsedData.ath_date                = coinGeckoData.athDate;
+        if (coinGeckoData.atlUsd != null)          parsedData.atl_usd                 = Number(coinGeckoData.atlUsd);
+        if (coinGeckoData.atlDate != null)         parsedData.atl_date                = coinGeckoData.atlDate;
+        if (coinGeckoData.circulatingSupply != null) parsedData.circulating_supply    = Number(coinGeckoData.circulatingSupply);
+        if (coinGeckoData.maxSupply != null)       parsedData.max_supply              = Number(coinGeckoData.maxSupply);
+        if (coinGeckoData.fdvUsd != null)          parsedData.fdv_usd                 = Number(coinGeckoData.fdvUsd);
+        if (coinGeckoData.marketCapRank != null)   parsedData.market_cap_rank         = Number(coinGeckoData.marketCapRank);
+        if (coinGeckoData.logo_url)                parsedData.logo_url                = coinGeckoData.logo_url;
+        if (coinGeckoData.name)                    parsedData.name                    = coinGeckoData.name;
+        if (coinGeckoData.symbol)                  parsedData.ticker                  = coinGeckoData.symbol;
       }
       
       setTokenData(parsedData);
