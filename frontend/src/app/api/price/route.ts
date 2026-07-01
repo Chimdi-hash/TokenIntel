@@ -12,38 +12,48 @@ export async function GET(request: Request) {
   let volumeUsd = null;
   let changePercent = null;
 
+  // Try CoinCap first
   try {
     const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets?search=${ticker}&limit=5`, { next: { revalidate: 10 } });
-    const coinCapData = await coinCapResponse.json();
-    
-    const exactMatch = coinCapData.data?.find((a: any) => 
-      a.symbol.toUpperCase() === ticker.toUpperCase() || 
-      a.name.toUpperCase() === ticker.toUpperCase() ||
-      a.id.toUpperCase() === ticker.toUpperCase()
-    );
-    
-    if (exactMatch) {
-      priceUsd = Number(exactMatch.priceUsd);
-      volumeUsd = Number(exactMatch.volumeUsd24Hr);
-      changePercent = Number(exactMatch.changePercent24Hr);
-    } else {
-      const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${ticker}`, { next: { revalidate: 10 } });
-      const dexData = await dexResponse.json();
-      if (dexData.pairs && dexData.pairs.length > 0) {
-        const pair = dexData.pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
-        priceUsd = Number(pair.priceUsd);
-        volumeUsd = Number(pair.volume?.h24 || 0);
-        changePercent = Number(pair.priceChange?.h24 || 0);
+    if (coinCapResponse.ok) {
+      const coinCapData = await coinCapResponse.json();
+      const exactMatch = coinCapData.data?.find((a: any) => 
+        a.symbol.toUpperCase() === ticker.toUpperCase() || 
+        a.name.toUpperCase() === ticker.toUpperCase() ||
+        a.id.toUpperCase() === ticker.toUpperCase()
+      );
+      
+      if (exactMatch) {
+        priceUsd = Number(exactMatch.priceUsd);
+        volumeUsd = Number(exactMatch.volumeUsd24Hr);
+        changePercent = Number(exactMatch.changePercent24Hr);
       }
     }
+  } catch (e) {
+    console.warn("CoinCap fetch failed:", e);
+  }
 
-    if (priceUsd !== null) {
-      return NextResponse.json({ priceUsd, volumeUsd, changePercent });
-    } else {
-      return NextResponse.json({ error: 'Coin not found' }, { status: 404 });
+  // If CoinCap failed or didn't find an exact match, try DexScreener
+  if (priceUsd === null) {
+    try {
+      const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${ticker}`, { next: { revalidate: 10 } });
+      if (dexResponse.ok) {
+        const dexData = await dexResponse.json();
+        if (dexData.pairs && dexData.pairs.length > 0) {
+          const pair = dexData.pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+          priceUsd = Number(pair.priceUsd);
+          volumeUsd = Number(pair.volume?.h24 || 0);
+          changePercent = Number(pair.priceChange?.h24 || 0);
+        }
+      }
+    } catch (e) {
+      console.warn("DexScreener fetch failed:", e);
     }
-  } catch (error) {
-    console.error("API route fetch error:", error);
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+  }
+
+  if (priceUsd !== null) {
+    return NextResponse.json({ priceUsd, volumeUsd, changePercent });
+  } else {
+    return NextResponse.json({ error: 'Coin not found or APIs failed' }, { status: 404 });
   }
 }
