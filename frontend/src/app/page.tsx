@@ -111,18 +111,25 @@ export default function Home() {
       });
 
       // Fetch live market data directly from the client to bypass any datacenter IP blocking on GenLayer validators!
+      // We use CoinCap (for majors) and DexScreener (for altcoins) because they support CORS in the browser.
       let liveMarketData = "Live market data unavailable";
       try {
-        const binanceResponse = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${ticker.toUpperCase()}USDT`);
-        if (binanceResponse.ok) {
-          const binanceData = await binanceResponse.json();
-          liveMarketData = `Binance Live Price: $${Number(binanceData.lastPrice).toFixed(2)}, 24h Volume: $${Number(binanceData.quoteVolume).toFixed(2)}, 24h Change: ${Number(binanceData.priceChangePercent).toFixed(2)}%`;
+        const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets?search=${ticker}&limit=5`);
+        const coinCapData = await coinCapResponse.json();
+        
+        // Find the exact symbol match
+        const exactMatch = coinCapData.data?.find((a: any) => a.symbol.toUpperCase() === ticker.toUpperCase());
+        
+        if (exactMatch) {
+          liveMarketData = `Live Price: $${Number(exactMatch.priceUsd).toFixed(4)}, 24h Volume: $${Number(exactMatch.volumeUsd24Hr).toFixed(2)}, 24h Change: ${Number(exactMatch.changePercent24Hr).toFixed(2)}%`;
         } else {
-          // Fallback to CoinCap if Binance doesn't have a USDT pair for this coin
-          const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets/${ticker.toLowerCase()}`);
-          if (coinCapResponse.ok) {
-            const coinCapData = await coinCapResponse.json();
-            liveMarketData = `CoinCap Live Price: $${Number(coinCapData.data.priceUsd).toFixed(2)}, 24h Volume: $${Number(coinCapData.data.volumeUsd24Hr).toFixed(2)}, 24h Change: ${Number(coinCapData.data.changePercent24Hr).toFixed(2)}%`;
+          // Fallback to DexScreener for meme coins and smaller tokens
+          const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${ticker}`);
+          const dexData = await dexResponse.json();
+          if (dexData.pairs && dexData.pairs.length > 0) {
+            // Find the pair with the highest liquidity/volume
+            const pair = dexData.pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+            liveMarketData = `Live Price: $${Number(pair.priceUsd).toFixed(6)}, 24h Volume: $${Number(pair.volume?.h24 || 0).toFixed(2)}, 24h Change: ${Number(pair.priceChange?.h24 || 0).toFixed(2)}%`;
           }
         }
       } catch (e) {
