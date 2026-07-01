@@ -110,44 +110,27 @@ export default function Home() {
         provider: (window as any).ethereum,
       });
 
-      // Fetch live market data directly from the client to bypass any datacenter IP blocking on GenLayer validators!
-      // We use CoinCap (for majors) and DexScreener (for altcoins) because they support CORS in the browser.
+      // Fetch live market data via our Next.js serverless API route!
+      // This completely bypasses any browser adblockers (like Brave Shields) or strict CORS policies
+      // because the request is made directly to our own domain, and Vercel's backend handles the external API call.
       let liveMarketData = "Live market data unavailable";
       let overridePrice: number | null = null;
       let overrideVolume: number | null = null;
       let overrideChange: number | null = null;
       
       try {
-        const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets?search=${ticker}&limit=5`);
-        const coinCapData = await coinCapResponse.json();
-        
-        // Find the exact symbol, name, or id match. If none found, default to the top result!
-        const exactMatch = coinCapData.data?.find((a: any) => 
-          a.symbol.toUpperCase() === ticker.toUpperCase() || 
-          a.name.toUpperCase() === ticker.toUpperCase() ||
-          a.id.toUpperCase() === ticker.toUpperCase()
-        ) || coinCapData.data?.[0];
-        
-        if (exactMatch) {
-          overridePrice = Number(exactMatch.priceUsd);
-          overrideVolume = Number(exactMatch.volumeUsd24Hr);
-          overrideChange = Number(exactMatch.changePercent24Hr);
-          liveMarketData = `Live Price: $${overridePrice.toFixed(4)}, 24h Volume: $${overrideVolume.toFixed(2)}, 24h Change: ${overrideChange.toFixed(2)}%`;
+        const res = await fetch(`/api/price?ticker=${ticker}`);
+        if (res.ok) {
+          const data = await res.json();
+          overridePrice = data.priceUsd;
+          overrideVolume = data.volumeUsd;
+          overrideChange = data.changePercent;
+          liveMarketData = `Live Price: $${overridePrice?.toFixed(4)}, 24h Volume: $${overrideVolume?.toFixed(2)}, 24h Change: ${overrideChange?.toFixed(2)}%`;
         } else {
-          // Fallback to DexScreener for meme coins and smaller tokens
-          const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${ticker}`);
-          const dexData = await dexResponse.json();
-          if (dexData.pairs && dexData.pairs.length > 0) {
-            // Find the pair with the highest liquidity/volume
-            const pair = dexData.pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
-            overridePrice = Number(pair.priceUsd);
-            overrideVolume = Number(pair.volume?.h24 || 0);
-            overrideChange = Number(pair.priceChange?.h24 || 0);
-            liveMarketData = `Live Price: $${overridePrice.toFixed(6)}, 24h Volume: $${overrideVolume.toFixed(2)}, 24h Change: ${overrideChange.toFixed(2)}%`;
-          }
+          console.warn("API route returned an error:", await res.text());
         }
       } catch (e) {
-        console.warn("Failed to fetch live market data from frontend", e);
+        console.warn("Failed to fetch live market data from API route", e);
       }
 
       // Execute the intelligent contract method through the GenLayer Gateway
