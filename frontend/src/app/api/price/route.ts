@@ -15,25 +15,25 @@ export async function GET(request: Request) {
   let volumeUsd = null;
   let changePercent = null;
 
-  // 1. Try KuCoin (Extremely fast and reliable for Tickers like BTC, ETH, DOGE)
-  // KuCoin requires the exact ticker, so we only try if it's likely a ticker
-  if (upperTicker.length <= 6) {
+  // 1. Try Mexc Global (Extremely fast, lists 99% of all tokens including meme coins, no rate limits)
+  // Mexc requires the exact ticker (e.g. BTCUSDT, NOTUSDT, PEPEUSDT)
+  if (upperTicker.length <= 8) {
     try {
-      const kucoinRes = await fetch(`https://api.kucoin.com/api/v1/market/stats?symbol=${upperTicker}-USDT`, { next: { revalidate: 10 } });
-      if (kucoinRes.ok) {
-        const kucoinData = await kucoinRes.json();
-        if (kucoinData.code === "200000" && kucoinData.data && kucoinData.data.last) {
-          priceUsd = Number(kucoinData.data.last);
-          volumeUsd = Number(kucoinData.data.volValue || 0);
-          changePercent = Number(kucoinData.data.changeRate || 0) * 100;
+      const mexcRes = await fetch(`https://api.mexc.com/api/v3/ticker/24hr?symbol=${upperTicker}USDT`, { next: { revalidate: 10 } });
+      if (mexcRes.ok) {
+        const mexcData = await mexcRes.json();
+        if (mexcData && mexcData.lastPrice) {
+          priceUsd = Number(mexcData.lastPrice);
+          volumeUsd = Number(mexcData.quoteVolume || 0);
+          changePercent = Number(mexcData.priceChangePercent || 0) * 100;
         }
       }
     } catch (e) {
-      console.warn("KuCoin fetch failed:", e);
+      console.warn("Mexc fetch failed:", e);
     }
   }
 
-  // 2. Try CoinCap (Great for names like 'Dogecoin', 'Bitcoin', 'Solana')
+  // 2. Try CoinCap (Great for when the user searches full names like 'Dogecoin', 'Bitcoin', 'Solana')
   if (priceUsd === null) {
     try {
       const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets?search=${ticker}&limit=5`, { next: { revalidate: 10 } });
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // 3. Try DexScreener (Great for meme coins, new tokens, NOT, PEPE, WIF)
+  // 3. Try DexScreener (Absolute final fallback for brand-new decentralized meme coins)
   if (priceUsd === null) {
     try {
       const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${ticker}`, { next: { revalidate: 10 } });
