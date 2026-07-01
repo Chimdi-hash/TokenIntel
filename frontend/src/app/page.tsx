@@ -109,17 +109,14 @@ export default function Home() {
       let liveMarketData = 'Live market data unavailable';
       let cgData: any = null;
 
-      try {
-        const res = await fetch(`/api/price?ticker=${ticker}`);
-        if (res.ok) {
-          cgData = await res.json();
-          liveMarketData = `Live Price: $${Number(cgData.priceUsd).toFixed(6)}, Market Cap: $${Number(cgData.marketCapUsd).toFixed(0)}, 24h Volume: $${Number(cgData.volumeUsd).toFixed(0)}, 24h Change: ${Number(cgData.changePercent).toFixed(2)}%, Rank: #${cgData.marketCapRank}`;
-        } else {
-          console.warn('CoinGecko API route returned error:', await res.text());
-        }
-      } catch (e) {
-        console.warn('CoinGecko fetch failed silently:', e);
+      // Fetch live price — fail loudly if unavailable so users never see $0.00
+      const priceRes = await fetch(`/api/price?ticker=${ticker}`);
+      if (!priceRes.ok) {
+        const errBody = await priceRes.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errBody.error || `Could not find "${ticker}". Please check the ticker symbol and try again.`);
       }
+      cgData = await priceRes.json();
+      liveMarketData = `Live Price: $${Number(cgData.priceUsd).toFixed(6)}, Market Cap: $${Number(cgData.marketCapUsd).toFixed(0)}, 24h Volume: $${Number(cgData.volumeUsd).toFixed(0)}, 24h Change: ${Number(cgData.changePercent).toFixed(2)}%, Rank: #${cgData.marketCapRank}`;
 
       // ─── STEP 2: Create GenLayer client ─────────────────────────────────────
       const client = createClient({
