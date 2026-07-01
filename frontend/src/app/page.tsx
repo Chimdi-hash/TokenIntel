@@ -117,8 +117,12 @@ export default function Home() {
         const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets?search=${ticker}&limit=5`);
         const coinCapData = await coinCapResponse.json();
         
-        // Find the exact symbol match
-        const exactMatch = coinCapData.data?.find((a: any) => a.symbol.toUpperCase() === ticker.toUpperCase());
+        // Find the exact symbol, name, or id match. If none found, default to the top result!
+        const exactMatch = coinCapData.data?.find((a: any) => 
+          a.symbol.toUpperCase() === ticker.toUpperCase() || 
+          a.name.toUpperCase() === ticker.toUpperCase() ||
+          a.id.toUpperCase() === ticker.toUpperCase()
+        ) || coinCapData.data?.[0];
         
         if (exactMatch) {
           liveMarketData = `Live Price: $${Number(exactMatch.priceUsd).toFixed(4)}, 24h Volume: $${Number(exactMatch.volumeUsd24Hr).toFixed(2)}, 24h Change: ${Number(exactMatch.changePercent24Hr).toFixed(2)}%`;
