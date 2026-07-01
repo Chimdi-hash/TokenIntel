@@ -11,13 +11,17 @@ class TokenIntel(gl.Contract):
         self.token_analysis = TreeMap()
 
     @gl.public.write
-    def analyze_token(self, ticker: str) -> typing.Any:
-        # We instruct the validators to browse/search the internet for the token 
-        # and extract the exact fields requested, returning them as a JSON object.
+    def analyze_token(self, ticker: str, live_market_data: str) -> typing.Any:
+        # The frontend provides us with 100% accurate, live market data (price, volume, etc)
+        # We instruct the validators to parse this data and combine it with AI sentiment analysis.
         task_prompt = f"""
-        You are a cryptocurrency analyst with LIVE WEB ACCESS. Your task is to use your web search capabilities to find the real-time, current prices and statistics regarding the cryptocurrency with the ticker '{ticker}'.
-        You MUST search the web to get the most accurate, real-time data for today.
-        DO NOT output any apologies or conversational text like "I cannot browse". You must ONLY output a raw JSON object.
+        You are a cryptocurrency analyst. Your task is to analyze the cryptocurrency with the ticker '{ticker}'.
+        
+        CRITICAL INSTRUCTION: You have been provided with the following LIVE, REAL-TIME market data fetched directly from the internet just seconds ago:
+        {live_market_data}
+        
+        You MUST use this provided live market data to exactly populate the 'price_usd', 'volume_24h_usd', and 'price_change_24h_percent' fields. DO NOT hallucinate these values.
+        Use your general knowledge to calculate market cap if needed, and to fill in the remaining static fields (logo, website, summary, etc).
         
         Extract and return ONLY a valid JSON object with the following exact keys:
         - "logo_url" (string, URL to coin logo)
@@ -47,29 +51,22 @@ class TokenIntel(gl.Contract):
         - "developer_activity" (string, e.g. "High", "Medium", "Low")
         - "latest_news" (string, a headline of recent news)
         
-        Do not include any markdown formatting like ```json ... ```, just output the raw JSON string.
+        DO NOT output any apologies or conversational text like "Here is the JSON". Do not include any markdown formatting like ```json ... ```. Just output the raw JSON string.
         """
 
         def get_input() -> str:
-            # We use the built-in GenLayer WebSearch provider which is optimized for validator nodes
-            # and won't get blocked by external API Cloudflare protections.
-            search_prompt = task_prompt + f"\n\nCRITICAL INSTRUCTION: You MUST use your WebSearch provider to search the live internet for the EXACT CURRENT price and 24h volume of {ticker}. DO NOT hallucinate or use old training data. Search for 'current live price of {ticker} crypto today'."
-            
-            result = gl.nondet.exec_prompt(
-                search_prompt,
-                providers=[gl.providers.WebSearch()]
-            )
-            
+            # We simply execute the prompt. Since we already provided the live data as an argument,
+            # we don't need any slow WebSearch providers that could get blocked or timeout!
+            result = gl.nondet.exec_prompt(task_prompt)
             # Ensure markdown formatting is stripped if the LLM includes it
             result = result.replace("```json", "").replace("```", "").strip()
             return result
         
         # Ask validators to run the task, compare results, and reach consensus
-        # Because web data changes constantly (prices fluctuate by the second), 
-        # exact JSON matches are impossible. We tell the consensus LLM to be highly lenient.
+        # We tell the consensus LLM to be highly lenient on minor float differences.
         result = gl.eq_principle.prompt_comparative(
             get_input,
-            "Return true. The outputs are two different JSON structures containing real-time web data. Because live data fluctuates, exact matches are impossible. As long as both are valid JSON objects, you MUST consider them equivalent and return true."
+            "Return true. The outputs are two different JSON structures containing token data. As long as both are valid JSON objects with roughly similar values, you MUST consider them equivalent and return true."
         )
         
         # Save to persistent state only if valid

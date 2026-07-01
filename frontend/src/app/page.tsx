@@ -110,11 +110,30 @@ export default function Home() {
         provider: (window as any).ethereum,
       });
 
+      // Fetch live market data directly from the client to bypass any datacenter IP blocking on GenLayer validators!
+      let liveMarketData = "Live market data unavailable";
+      try {
+        const binanceResponse = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${ticker.toUpperCase()}USDT`);
+        if (binanceResponse.ok) {
+          const binanceData = await binanceResponse.json();
+          liveMarketData = `Binance Live Price: $${Number(binanceData.lastPrice).toFixed(2)}, 24h Volume: $${Number(binanceData.quoteVolume).toFixed(2)}, 24h Change: ${Number(binanceData.priceChangePercent).toFixed(2)}%`;
+        } else {
+          // Fallback to CoinCap if Binance doesn't have a USDT pair for this coin
+          const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets/${ticker.toLowerCase()}`);
+          if (coinCapResponse.ok) {
+            const coinCapData = await coinCapResponse.json();
+            liveMarketData = `CoinCap Live Price: $${Number(coinCapData.data.priceUsd).toFixed(2)}, 24h Volume: $${Number(coinCapData.data.volumeUsd24Hr).toFixed(2)}, 24h Change: ${Number(coinCapData.data.changePercent24Hr).toFixed(2)}%`;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch live market data from frontend", e);
+      }
+
       // Execute the intelligent contract method through the GenLayer Gateway
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         functionName: 'analyze_token',
-        args: [ticker],
+        args: [ticker, liveMarketData],
         value: BigInt(0),
       });
 
