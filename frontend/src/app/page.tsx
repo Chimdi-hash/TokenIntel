@@ -37,7 +37,6 @@ export default function Home() {
   const [address, setAddress] = useState<string>('');
   const [ticker, setTicker] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [aiLoading, setAiLoading] = useState<boolean>(false);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [error, setError] = useState<string>('');
 
@@ -100,144 +99,122 @@ export default function Home() {
     }
 
     setLoading(true);
-    setAiLoading(false);
     setError('');
     setTokenData(null);
 
     try {
-      // ─── STEP 1: Fetch live market data from CoinGecko immediately ───────────
-      // This is instant and always accurate for ALL 10,000+ coins on CoinGecko.
-      const res = await fetch(`/api/price?ticker=${ticker}`);
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Could not find "${ticker}" on CoinGecko. Please check the ticker and try again. (${errText})`);
-      }
-      const cgData = await res.json();
+      // ─── STEP 1: Silently fetch live market data from CoinGecko ─────────────
+      // This runs in the background — the user sees nothing yet.
+      // We pass this data to the contract so the AI has accurate numbers to work with.
+      let liveMarketData = 'Live market data unavailable';
+      let cgData: any = null;
 
-      // Build a complete TokenData object from CoinGecko right now.
-      // AI fields get placeholder values that will be filled in shortly.
-      const immediateData: TokenData = {
-        logo_url:                  cgData.logo_url || '',
-        name:                      cgData.name || ticker,
-        ticker:                    cgData.symbol || ticker.toUpperCase(),
-        price_usd:                 Number(cgData.priceUsd),
-        market_cap_usd:            Number(cgData.marketCapUsd),
-        volume_24h_usd:            Number(cgData.volumeUsd),
-        price_change_24h_percent:  Number(cgData.changePercent),
-        ath_usd:                   Number(cgData.athUsd),
-        ath_date:                  cgData.athDate || '',
-        atl_usd:                   Number(cgData.atlUsd),
-        atl_date:                  cgData.atlDate || '',
-        launch_date:               '',
-        circulating_supply:        Number(cgData.circulatingSupply),
-        max_supply:                cgData.maxSupply != null ? Number(cgData.maxSupply) : null,
-        fdv_usd:                   Number(cgData.fdvUsd),
-        market_cap_rank:           Number(cgData.marketCapRank),
-        blockchain:                '',
-        official_website:          '',
-        whitepaper:                '',
-        liquidity_usd:             null,
-        risk_score:                0,
-        ai_summary:                'Fetching AI analysis from GenLayer validators...',
-        bullish_bearish:           'Neutral',
-        community_sentiment:       'Loading...',
-        developer_activity:        'Loading...',
-        latest_news:               'Fetching latest news...',
-      };
-
-      // ─── STEP 2: Show prices IMMEDIATELY — no waiting for AI ─────────────────
-      setTokenData(immediateData);
-      setLoading(false);   // Stop the initial spinner — user sees prices now!
-      setAiLoading(true);  // Show a subtle AI-loading badge on the dashboard
-
-      // ─── STEP 3: Run GenLayer AI analysis in the background ──────────────────
-      // This enriches the AI fields (summary, sentiment, news, risk score, website)
-      // without blocking the user from seeing correct prices.
       try {
-        const liveMarketData = `Live Price: $${Number(cgData.priceUsd).toFixed(6)}, Market Cap: $${Number(cgData.marketCapUsd).toFixed(0)}, 24h Volume: $${Number(cgData.volumeUsd).toFixed(0)}, 24h Change: ${Number(cgData.changePercent).toFixed(2)}%, Rank: #${cgData.marketCapRank}`;
+        const res = await fetch(`/api/price?ticker=${ticker}`);
+        if (res.ok) {
+          cgData = await res.json();
+          liveMarketData = `Live Price: $${Number(cgData.priceUsd).toFixed(6)}, Market Cap: $${Number(cgData.marketCapUsd).toFixed(0)}, 24h Volume: $${Number(cgData.volumeUsd).toFixed(0)}, 24h Change: ${Number(cgData.changePercent).toFixed(2)}%, Rank: #${cgData.marketCapRank}`;
+        } else {
+          console.warn('CoinGecko API route returned error:', await res.text());
+        }
+      } catch (e) {
+        console.warn('CoinGecko fetch failed silently:', e);
+      }
 
-        const client = createClient({
-          chain: studionet,
-          account: address as `0x${string}`,
-          provider: (window as any).ethereum,
-        });
+      // ─── STEP 2: Create GenLayer client ─────────────────────────────────────
+      const client = createClient({
+        chain: studionet,
+        account: address as `0x${string}`,
+        provider: (window as any).ethereum,
+      });
 
-        // Snapshot the old cached value so we can detect when a fresh result arrives
-        let previousDataString = "{}";
+      // Snapshot the current cached value so we can detect a genuinely new result
+      let previousDataString = '{}';
+      try {
+        previousDataString = await client.readContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          functionName: 'get_token_analysis',
+          args: [ticker],
+        }) as string || '{}';
+      } catch (_) {}
+
+      // ─── STEP 3: Submit transaction — MetaMask pops up here ─────────────────
+      // The user must SIGN before anything is shown on screen.
+      const hash = await client.writeContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        functionName: 'analyze_token',
+        args: [ticker, liveMarketData],
+        value: BigInt(0),
+      });
+
+      try {
+        const receipt = await client.waitForTransactionReceipt({ hash });
+        if (String(receipt.status) === 'reverted' || receipt.status === 0) {
+          throw new Error('The GenLayer transaction reverted. Please try again.');
+        }
+      } catch (err: any) {
+        if (err.message?.toLowerCase().includes('revert')) throw err;
+        console.log('waitForTransactionReceipt timeout, switching to manual polling…', err);
+      }
+
+      // ─── STEP 4: Poll until AI validators reach consensus ───────────────────
+      // Only break out when we receive a result that is DIFFERENT from the snapshot.
+      let dataString: any = '{}';
+      let attempts = 0;
+      while (attempts < 150) {
         try {
-          previousDataString = await client.readContract({
+          dataString = await client.readContract({
             address: CONTRACT_ADDRESS as `0x${string}`,
             functionName: 'get_token_analysis',
-            args: [ticker]
-          }) as string || "{}";
+            args: [ticker],
+          });
+          const hasData = dataString && dataString !== '{}' && dataString.length > 10;
+          const isNew   = dataString !== previousDataString;
+          if (hasData && isNew) break;
         } catch (_) {}
-
-        const hash = await client.writeContract({
-          address: CONTRACT_ADDRESS as `0x${string}`,
-          functionName: 'analyze_token',
-          args: [ticker, liveMarketData],
-          value: BigInt(0),
-        });
-
-        try {
-          const receipt = await client.waitForTransactionReceipt({ hash });
-          if (String(receipt.status) === 'reverted' || receipt.status === 0) throw new Error('reverted');
-        } catch (err: any) {
-          if (err.message?.toLowerCase().includes('revert')) throw err;
-        }
-
-        // Poll until we get a genuinely new result from the validators
-        let dataString: any = "{}";
-        let attempts = 0;
-        while (attempts < 150) {
-          try {
-            dataString = await client.readContract({
-              address: CONTRACT_ADDRESS as `0x${string}`,
-              functionName: 'get_token_analysis',
-              args: [ticker]
-            });
-            const hasData = dataString && dataString !== "{}" && dataString.length > 10;
-            const isNew   = dataString !== previousDataString;
-            if (hasData && isNew) break;
-          } catch (_) {}
-          attempts++;
-          await new Promise(r => setTimeout(r, 2000));
-        }
-
-        if (dataString && dataString !== "{}" && dataString.length > 10) {
-          const aiData = JSON.parse(dataString as string);
-          // Merge: keep CoinGecko numbers, take only AI text fields
-          setTokenData(prev => prev ? {
-            ...prev,
-            blockchain:          aiData.blockchain          || prev.blockchain,
-            official_website:    aiData.official_website    || prev.official_website,
-            whitepaper:          aiData.whitepaper          || prev.whitepaper,
-            launch_date:         aiData.launch_date         || prev.launch_date,
-            risk_score:          aiData.risk_score          || prev.risk_score,
-            ai_summary:          aiData.ai_summary          || prev.ai_summary,
-            bullish_bearish:     aiData.bullish_bearish     || prev.bullish_bearish,
-            community_sentiment: aiData.community_sentiment || prev.community_sentiment,
-            developer_activity:  aiData.developer_activity  || prev.developer_activity,
-            latest_news:         aiData.latest_news         || prev.latest_news,
-          } : prev);
-        }
-      } catch (aiErr: any) {
-        // AI enrichment failed — that's OK, user already sees correct prices!
-        console.warn("GenLayer AI enrichment failed:", aiErr);
-        setTokenData(prev => prev ? {
-          ...prev,
-          ai_summary: 'AI analysis unavailable at this time. Price data above is accurate.',
-          community_sentiment: 'N/A',
-          developer_activity: 'N/A',
-          latest_news: 'N/A',
-        } : prev);
-      } finally {
-        setAiLoading(false);
+        attempts++;
+        await new Promise(r => setTimeout(r, 2000));
       }
+
+      // If consensus never arrived, fall back to the old cached result if one exists
+      if (!dataString || dataString === '{}' || dataString.length <= 10) {
+        if (previousDataString && previousDataString !== '{}' && previousDataString.length > 10) {
+          dataString = previousDataString;
+        } else {
+          throw new Error('Timeout: AI validators took too long. Please try again.');
+        }
+      }
+
+      // ─── STEP 5: Parse AI result then override ALL numbers with CoinGecko ───
+      // The AI provides qualitative fields (summary, sentiment, website, etc.).
+      // CoinGecko provides 100% accurate quantitative fields (price, market cap, etc.).
+      const parsedData: TokenData = JSON.parse(dataString as string);
+
+      if (cgData) {
+        if (cgData.priceUsd        != null) parsedData.price_usd               = Number(cgData.priceUsd);
+        if (cgData.marketCapUsd    != null) parsedData.market_cap_usd          = Number(cgData.marketCapUsd);
+        if (cgData.volumeUsd       != null) parsedData.volume_24h_usd          = Number(cgData.volumeUsd);
+        if (cgData.changePercent   != null) parsedData.price_change_24h_percent = Number(cgData.changePercent);
+        if (cgData.athUsd          != null) parsedData.ath_usd                 = Number(cgData.athUsd);
+        if (cgData.athDate)                 parsedData.ath_date                = cgData.athDate;
+        if (cgData.atlUsd          != null) parsedData.atl_usd                 = Number(cgData.atlUsd);
+        if (cgData.atlDate)                 parsedData.atl_date                = cgData.atlDate;
+        if (cgData.circulatingSupply != null) parsedData.circulating_supply    = Number(cgData.circulatingSupply);
+        if (cgData.maxSupply       != null) parsedData.max_supply              = Number(cgData.maxSupply);
+        if (cgData.fdvUsd          != null) parsedData.fdv_usd                 = Number(cgData.fdvUsd);
+        if (cgData.marketCapRank   != null) parsedData.market_cap_rank         = Number(cgData.marketCapRank);
+        if (cgData.logo_url)                parsedData.logo_url                = cgData.logo_url;
+        if (cgData.name)                    parsedData.name                    = cgData.name;
+        if (cgData.symbol)                  parsedData.ticker                  = cgData.symbol;
+      }
+
+      // ─── STEP 6: Render the dashboard ───────────────────────────────────────
+      setTokenData(parsedData);
 
     } catch (err: any) {
       console.error(err);
-      setError(err.shortMessage || err.message || "An error occurred during analysis.");
+      setError(err.shortMessage || err.message || 'An error occurred during analysis.');
+    } finally {
       setLoading(false);
     }
   };
