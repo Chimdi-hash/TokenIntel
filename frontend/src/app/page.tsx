@@ -113,6 +113,10 @@ export default function Home() {
       // Fetch live market data directly from the client to bypass any datacenter IP blocking on GenLayer validators!
       // We use CoinCap (for majors) and DexScreener (for altcoins) because they support CORS in the browser.
       let liveMarketData = "Live market data unavailable";
+      let overridePrice: number | null = null;
+      let overrideVolume: number | null = null;
+      let overrideChange: number | null = null;
+      
       try {
         const coinCapResponse = await fetch(`https://api.coincap.io/v2/assets?search=${ticker}&limit=5`);
         const coinCapData = await coinCapResponse.json();
@@ -125,7 +129,10 @@ export default function Home() {
         ) || coinCapData.data?.[0];
         
         if (exactMatch) {
-          liveMarketData = `Live Price: $${Number(exactMatch.priceUsd).toFixed(4)}, 24h Volume: $${Number(exactMatch.volumeUsd24Hr).toFixed(2)}, 24h Change: ${Number(exactMatch.changePercent24Hr).toFixed(2)}%`;
+          overridePrice = Number(exactMatch.priceUsd);
+          overrideVolume = Number(exactMatch.volumeUsd24Hr);
+          overrideChange = Number(exactMatch.changePercent24Hr);
+          liveMarketData = `Live Price: $${overridePrice.toFixed(4)}, 24h Volume: $${overrideVolume.toFixed(2)}, 24h Change: ${overrideChange.toFixed(2)}%`;
         } else {
           // Fallback to DexScreener for meme coins and smaller tokens
           const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${ticker}`);
@@ -133,7 +140,10 @@ export default function Home() {
           if (dexData.pairs && dexData.pairs.length > 0) {
             // Find the pair with the highest liquidity/volume
             const pair = dexData.pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
-            liveMarketData = `Live Price: $${Number(pair.priceUsd).toFixed(6)}, 24h Volume: $${Number(pair.volume?.h24 || 0).toFixed(2)}, 24h Change: ${Number(pair.priceChange?.h24 || 0).toFixed(2)}%`;
+            overridePrice = Number(pair.priceUsd);
+            overrideVolume = Number(pair.volume?.h24 || 0);
+            overrideChange = Number(pair.priceChange?.h24 || 0);
+            liveMarketData = `Live Price: $${overridePrice.toFixed(6)}, 24h Volume: $${overrideVolume.toFixed(2)}, 24h Change: ${overrideChange.toFixed(2)}%`;
           }
         }
       } catch (e) {
@@ -190,6 +200,15 @@ export default function Home() {
       }
 
       const parsedData: TokenData = JSON.parse(dataString as string);
+      
+      // GUARANTEE NO N/A PRICES: If the AI failed to extract the numbers from the prompt, 
+      // we strictly override them with the raw variables we already fetched!
+      if (overridePrice !== null) {
+        parsedData.price_usd = overridePrice;
+        parsedData.volume_24h_usd = overrideVolume || parsedData.volume_24h_usd;
+        parsedData.price_change_24h_percent = overrideChange || parsedData.price_change_24h_percent;
+      }
+      
       setTokenData(parsedData);
 
     } catch (err: any) {
