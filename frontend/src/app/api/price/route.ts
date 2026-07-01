@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       a.symbol.toUpperCase() === ticker.toUpperCase() || 
       a.name.toUpperCase() === ticker.toUpperCase() ||
       a.id.toUpperCase() === ticker.toUpperCase()
-    ) || coinCapData.data?.[0];
+    );
     
     if (exactMatch) {
       priceUsd = Number(exactMatch.priceUsd);
