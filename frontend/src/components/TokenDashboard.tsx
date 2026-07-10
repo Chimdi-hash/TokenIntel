@@ -34,6 +34,7 @@ export interface TokenData {
   community_sentiment: string;
   developer_activity: string;
   latest_news: string;
+  is_whitelisted?: boolean;
 }
 
 const containerVariants: import("framer-motion").Variants = {
@@ -89,7 +90,7 @@ export default function TokenDashboard({ data }: { data: TokenData }) {
             <img src={data.logo_url} alt={data.name} className="w-full h-full object-contain rounded-full" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold text-white flex items-center gap-3">
+            <h1 className="text-4xl font-bold text-white flex items-center gap-3 flex-wrap">
               {data.name} 
               <span className="text-xl font-medium px-3 py-1 bg-white/10 rounded-full text-indigo-200">
                 {data.ticker.toUpperCase()}
@@ -97,6 +98,12 @@ export default function TokenDashboard({ data }: { data: TokenData }) {
               <span className="text-sm px-2 py-1 bg-indigo-500/20 text-indigo-300 rounded-md border border-indigo-500/30">
                 Rank #{data.market_cap_rank}
               </span>
+              {data.is_whitelisted && (
+                <span className="text-sm px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 flex items-center gap-1.5 ml-2 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                  <ShieldAlert size={14} className="text-emerald-400" />
+                  Verified Safe
+                </span>
+              )}
             </h1>
             <div className="flex items-center gap-4 mt-2">
               <span className="text-3xl font-semibold text-white">

@@ -137,10 +137,11 @@ export default function Home() {
 
       // ─── STEP 3: Submit transaction — MetaMask pops up here ─────────────────
       // The user must SIGN before anything is shown on screen.
+      // We only pass the ticker. The contract itself fetches the data on-chain.
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         functionName: 'analyze_token',
-        args: [ticker, liveMarketData],
+        args: [ticker],
         value: BigInt(0),
       });
 
@@ -186,6 +187,18 @@ export default function Home() {
       // The AI provides qualitative fields (summary, sentiment, website, etc.).
       // CoinGecko provides 100% accurate quantitative fields (price, market cap, etc.).
       const parsedData: TokenData = JSON.parse(dataString as string);
+
+      // Check the contract to see if this token was whitelisted by the AI consensus
+      try {
+        const isWhitelisted = await client.readContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          functionName: 'is_whitelisted',
+          args: [ticker],
+        }) as boolean;
+        parsedData.is_whitelisted = isWhitelisted;
+      } catch (wlErr) {
+        console.warn('Could not fetch whitelist status', wlErr);
+      }
 
       if (cgData) {
         if (cgData.priceUsd        != null) parsedData.price_usd               = Number(cgData.priceUsd);
