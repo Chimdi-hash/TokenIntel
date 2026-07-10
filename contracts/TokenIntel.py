@@ -7,7 +7,7 @@ class TokenIntel(gl.Contract):
     # Persistent state variable to store token analysis results as JSON strings
     token_analysis: TreeMap[str, str]
     # New state variable for on-chain utility (Autonomous Whitelisting)
-    whitelisted_tokens: TreeMap[str, bool]
+    whitelisted_tokens: TreeMap[str, str]
 
     def __init__(self):
         self.token_analysis = TreeMap()
@@ -94,9 +94,9 @@ class TokenIntel(gl.Contract):
                 
                 # The token is whitelisted for our hypothetical protocol if it is safe
                 if sentiment == "BULLISH" and risk <= 5:
-                    self.whitelisted_tokens[ticker.upper()] = True
+                    self.whitelisted_tokens[ticker.upper()] = "true"
                 else:
-                    self.whitelisted_tokens[ticker.upper()] = False
+                    self.whitelisted_tokens[ticker.upper()] = "false"
             except Exception:
                 pass
                 
@@ -113,5 +113,5 @@ class TokenIntel(gl.Contract):
     def is_whitelisted(self, ticker: str) -> bool:
         ticker = ticker.upper()
         if ticker in self.whitelisted_tokens:
-            return self.whitelisted_tokens[ticker]
+            return self.whitelisted_tokens[ticker] == "true"
         return False
