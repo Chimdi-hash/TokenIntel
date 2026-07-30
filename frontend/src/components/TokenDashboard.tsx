@@ -35,6 +35,8 @@ export interface TokenData {
   developer_activity: string;
   latest_news: string;
   is_whitelisted?: boolean;
+  wager_result?: string;
+  wager_amount?: number;
 }
 
 const containerVariants: import("framer-motion").Variants = {
@@ -102,6 +104,16 @@ export default function TokenDashboard({ data }: { data: TokenData }) {
                 <span className="text-sm px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 flex items-center gap-1.5 ml-2 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                   <ShieldAlert size={14} className="text-emerald-400" />
                   Verified Safe
+                </span>
+              )}
+              {data.wager_result === "WON" && (
+                <span className="text-sm px-3 py-1 bg-green-500/20 text-green-300 rounded-full border border-green-500/30 flex items-center gap-1.5 ml-2 font-bold tracking-wider">
+                  PAID OUT ({data.wager_amount ? data.wager_amount * 2 : 0} GEN)
+                </span>
+              )}
+              {data.wager_result === "LOST" && (
+                <span className="text-sm px-3 py-1 bg-red-500/20 text-red-300 rounded-full border border-red-500/30 flex items-center gap-1.5 ml-2 font-bold tracking-wider">
+                  BURNED ({data.wager_amount} GEN)
                 </span>
               )}
             </h1>

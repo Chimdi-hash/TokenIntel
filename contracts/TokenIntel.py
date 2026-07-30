@@ -8,13 +8,32 @@ class TokenIntel(gl.Contract):
     token_analysis: TreeMap[str, str]
     # New state variable for on-chain utility (Autonomous Whitelisting)
     whitelisted_tokens: TreeMap[str, str]
-
+    # State variable to track wager results (Address_Ticker -> "WON" or "LOST")
+    wager_results: TreeMap[str, str]
+    
     def __init__(self):
         self.token_analysis = TreeMap()
         self.whitelisted_tokens = TreeMap()
+        self.wager_results = TreeMap()
 
-    @gl.public.write
-    def analyze_token(self, ticker: str) -> typing.Any:
+@gl.evm.contract_interface
+class _EOARecipient:
+    class View:
+        pass
+    class Write:
+        pass
+
+    @gl.public.write.payable
+    def analyze_token(self, ticker: str, predicted_sentiment: str) -> typing.Any:
+        # Enforce wager limit: between 1 and 5 GEN (1e18 to 5e18 wei)
+        wager_amount = gl.message.value
+        one_gen = u256(1000000000000000000)
+        five_gen = u256(5000000000000000000)
+        assert wager_amount >= one_gen, "Wager must be at least 1 GEN."
+        assert wager_amount <= five_gen, "Wager cannot exceed 5 GEN."
+        
+        predicted_sentiment = predicted_sentiment.upper()
+        assert predicted_sentiment in ["BULLISH", "BEARISH", "NEUTRAL"], "Invalid sentiment prediction."
         
         def get_input() -> str:
             # 1. Fetch market data directly on-chain!
@@ -97,6 +116,20 @@ class TokenIntel(gl.Contract):
                     self.whitelisted_tokens[ticker.upper()] = "true"
                 else:
                     self.whitelisted_tokens[ticker.upper()] = "false"
+                # --- RESOLVE WAGER ---
+                sender_addr = str(gl.message.sender_address).lower()
+                wager_key = f"{sender_addr}_{ticker.upper()}"
+                
+                # Check if the AI consensus matches the user's prediction
+                if sentiment == predicted_sentiment:
+                    self.wager_results[wager_key] = "WON"
+                    # Payout: 2x the wager amount
+                    payout = u256(int(wager_amount) * 2)
+                    _EOARecipient(Address(sender_addr)).emit_transfer(value=payout)
+                else:
+                    self.wager_results[wager_key] = "LOST"
+                    # Funds are burned / kept by the contract
+                    
             except Exception:
                 pass
                 
@@ -115,3 +148,10 @@ class TokenIntel(gl.Contract):
         if ticker in self.whitelisted_tokens:
             return self.whitelisted_tokens[ticker] == "true"
         return False
+        
+    @gl.public.view
+    def get_wager_result(self, address: str, ticker: str) -> str:
+        wager_key = f"{address.lower()}_{ticker.upper()}"
+        if wager_key in self.wager_results:
+            return self.wager_results[wager_key]
+        return "NONE"

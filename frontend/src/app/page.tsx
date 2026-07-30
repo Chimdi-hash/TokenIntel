@@ -39,6 +39,9 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [error, setError] = useState<string>('');
+  const [wagerSentiment, setWagerSentiment] = useState<string>('BULLISH');
+  const [wagerAmount, setWagerAmount] = useState<number>(1);
+  const [balance, setBalance] = useState<string>('0');
 
   const connectWallet = async () => {
     if (typeof window !== 'undefined' && (window as any).ethereum) {
@@ -75,6 +78,13 @@ export default function Home() {
 
         setWallet(walletClient);
         setAddress(account);
+        
+        try {
+          const balanceWei = await walletClient.getBalance({ address: account });
+          setBalance((Number(balanceWei) / 1e18).toFixed(2));
+        } catch(e) {
+          console.warn("Could not fetch balance", e);
+        }
       } catch (err: any) {
         setError(err.message);
       }
@@ -138,11 +148,12 @@ export default function Home() {
       // ─── STEP 3: Submit transaction — MetaMask pops up here ─────────────────
       // The user must SIGN before anything is shown on screen.
       // We only pass the ticker. The contract itself fetches the data on-chain.
+      const valueInWei = BigInt(Math.floor(wagerAmount * 1e18));
       const hash = await client.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         functionName: 'analyze_token',
-        args: [ticker],
-        value: BigInt(0),
+        args: [ticker, wagerSentiment],
+        value: valueInWei,
       });
 
       try {
@@ -199,6 +210,27 @@ export default function Home() {
       } catch (wlErr) {
         console.warn('Could not fetch whitelist status', wlErr);
       }
+      
+      // Check the wager result
+      try {
+        const wagerResult = await client.readContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          functionName: 'get_wager_result',
+          args: [address, ticker],
+        }) as string;
+        parsedData.wager_result = wagerResult;
+        parsedData.wager_amount = wagerAmount;
+      } catch (wagerErr) {
+        console.warn('Could not fetch wager result', wagerErr);
+      }
+      
+      // Update balance after transaction
+      if (wallet) {
+        try {
+          const balanceWei = await wallet.getBalance({ address: address });
+          setBalance((Number(balanceWei) / 1e18).toFixed(2));
+        } catch(e) {}
+      }
 
       if (cgData) {
         if (cgData.priceUsd        != null) parsedData.price_usd               = Number(cgData.priceUsd);
@@ -245,7 +277,7 @@ export default function Home() {
           <div className="flex items-center gap-2 md:gap-3">
             <div className="glass-panel px-3 py-1.5 md:py-2 rounded-full font-medium flex items-center gap-2 border-emerald-500/30 text-emerald-100 text-[10px] sm:text-xs md:text-sm">
               <Wallet size={14} className="text-emerald-400 hidden sm:block" />
-              {`${address.substring(0, 4)}...${address.substring(38)}`}
+              {`${address.substring(0, 4)}...${address.substring(38)}`} <span className="opacity-50">|</span> <span className="text-emerald-300">{balance} GEN</span>
             </div>
             <button 
               onClick={disconnectWallet}
@@ -303,6 +335,32 @@ export default function Home() {
 
         {/* Input Controls */}
         <motion.div variants={itemVariants} className="w-full max-w-2xl space-y-4 pt-6">
+          <div className="w-full flex flex-col sm:flex-row gap-4 justify-center pb-4">
+             <div className="flex flex-col gap-2">
+               <label className="text-xs text-slate-400 uppercase tracking-widest font-semibold text-left">Your AI Prediction</label>
+               <select 
+                 className="bg-black/40 backdrop-blur-xl border border-white/10 py-2.5 px-4 rounded-xl text-sm uppercase text-white outline-none focus:border-indigo-500/50 cursor-pointer"
+                 value={wagerSentiment}
+                 onChange={(e) => setWagerSentiment(e.target.value)}
+               >
+                 <option value="BULLISH">BULLISH 🚀</option>
+                 <option value="BEARISH">BEARISH 📉</option>
+                 <option value="NEUTRAL">NEUTRAL ⚖️</option>
+               </select>
+             </div>
+             <div className="flex flex-col gap-2">
+               <label className="text-xs text-slate-400 uppercase tracking-widest font-semibold text-left">Wager Amount (GEN)</label>
+               <input 
+                 type="number"
+                 min="1"
+                 max="5"
+                 step="1"
+                 className="bg-black/40 backdrop-blur-xl border border-white/10 py-2.5 px-4 rounded-xl text-sm text-white outline-none focus:border-indigo-500/50 w-full sm:w-40"
+                 value={wagerAmount}
+                 onChange={(e) => setWagerAmount(Math.max(1, Math.min(5, Number(e.target.value))))}
+               />
+             </div>
+          </div>
           <div className="relative flex items-center group">
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
             <Search className="absolute left-3 md:left-5 text-indigo-300 z-10 w-4 h-4 md:w-5 md:h-5" />
