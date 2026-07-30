@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
 import { createWalletClient, custom, publicActions } from 'viem';
@@ -46,7 +46,7 @@ export default function Home() {
   const [betHistory, setBetHistory] = useState<BetHistoryItem[]>([]);
 
   // Load history from localStorage when wallet connects
-  React.useEffect(() => {
+  useEffect(() => {
     if (address) {
       const stored = localStorage.getItem(`tokenintel_history_${address}`);
       if (stored) {
