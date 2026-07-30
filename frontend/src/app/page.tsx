@@ -145,28 +145,44 @@ export default function Home() {
         }) as string || '{}';
       } catch (_) {}
 
-      // ─── STEP 3: Submit transaction — MetaMask pops up here ─────────────────
+      // ─── STEP 3: Submit Wager Transaction — MetaMask pops up ─────────────────
       // The user must SIGN before anything is shown on screen.
-      // We only pass the ticker. The contract itself fetches the data on-chain.
       const valueInWei = BigInt(Math.floor(wagerAmount * 1e18));
-      const hash = await client.writeContract({
+      const wagerHash = await client.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
-        functionName: 'analyze_token',
+        functionName: 'place_wager',
         args: [ticker, wagerSentiment],
         value: valueInWei,
       });
 
       try {
-        const receipt = await client.waitForTransactionReceipt({ hash });
+        const receipt = await client.waitForTransactionReceipt({ hash: wagerHash });
         if (String(receipt.status) === 'reverted' || receipt.status === 0) {
-          throw new Error('The GenLayer transaction reverted. Please try again.');
+          throw new Error('The wager transaction reverted. Please try again.');
         }
       } catch (err: any) {
         if (err.message?.toLowerCase().includes('revert')) throw err;
-        console.log('waitForTransactionReceipt timeout, switching to manual polling…', err);
       }
 
-      // ─── STEP 4: Poll until AI validators reach consensus ───────────────────
+      // ─── STEP 4: Submit Analyze Transaction — MetaMask pops up again ─────────
+      // We only pass the ticker. The contract itself fetches the data on-chain.
+      const hash = await client.writeContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        functionName: 'analyze_token',
+        args: [ticker],
+        value: BigInt(0),
+      });
+
+      try {
+        const receipt = await client.waitForTransactionReceipt({ hash });
+        if (String(receipt.status) === 'reverted' || receipt.status === 0) {
+          throw new Error('The analysis transaction reverted. Please try again.');
+        }
+      } catch (err: any) {
+        if (err.message?.toLowerCase().includes('revert')) throw err;
+      }
+
+      // ─── STEP 5: Poll until AI validators reach consensus ───────────────────
       // Only break out when we receive a result that is DIFFERENT from the snapshot.
       let dataString: any = '{}';
       let attempts = 0;

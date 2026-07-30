@@ -10,11 +10,14 @@ class TokenIntel(gl.Contract):
     whitelisted_tokens: TreeMap[str, str]
     # State variable to track wager results (Address_Ticker -> "WON" or "LOST")
     wager_results: TreeMap[str, str]
+    # Active wagers waiting for resolution
+    active_wagers: TreeMap[str, str]
     
     def __init__(self):
         self.token_analysis = TreeMap()
         self.whitelisted_tokens = TreeMap()
         self.wager_results = TreeMap()
+        self.active_wagers = TreeMap()
 
 @gl.evm.contract_interface
 class _EOARecipient:
@@ -24,8 +27,7 @@ class _EOARecipient:
         pass
 
     @gl.public.write.payable
-    def analyze_token(self, ticker: str, predicted_sentiment: str) -> typing.Any:
-        # Enforce wager limit: between 1 and 5 GEN (1e18 to 5e18 wei)
+    def place_wager(self, ticker: str, predicted_sentiment: str) -> None:
         wager_amount = gl.message.value
         one_gen = u256(1000000000000000000)
         five_gen = u256(5000000000000000000)
@@ -34,6 +36,17 @@ class _EOARecipient:
         
         predicted_sentiment = predicted_sentiment.upper()
         assert predicted_sentiment in ["BULLISH", "BEARISH", "NEUTRAL"], "Invalid sentiment prediction."
+        
+        sender_addr = str(gl.message.sender_address).lower()
+        wager_key = f"{sender_addr}_{ticker.upper()}"
+        
+        self.active_wagers[wager_key] = json.dumps({
+            "amount": str(wager_amount),
+            "sentiment": predicted_sentiment
+        })
+
+    @gl.public.write
+    def analyze_token(self, ticker: str) -> typing.Any:
         
         def get_input() -> str:
             # 1. Fetch market data directly on-chain!
@@ -120,15 +133,24 @@ class _EOARecipient:
                 sender_addr = str(gl.message.sender_address).lower()
                 wager_key = f"{sender_addr}_{ticker.upper()}"
                 
-                # Check if the AI consensus matches the user's prediction
-                if sentiment == predicted_sentiment:
-                    self.wager_results[wager_key] = "WON"
-                    # Payout: 2x the wager amount
-                    payout = u256(int(wager_amount) * 2)
-                    _EOARecipient(Address(sender_addr)).emit_transfer(value=payout)
-                else:
-                    self.wager_results[wager_key] = "LOST"
-                    # Funds are burned / kept by the contract
+                wager_raw = self.active_wagers.get(wager_key)
+                if wager_raw:
+                    wager_data = json.loads(wager_raw)
+                    wager_amount_str = wager_data["amount"]
+                    predicted_sentiment = wager_data["sentiment"]
+                    
+                    # Check if the AI consensus matches the user's prediction
+                    if sentiment == predicted_sentiment:
+                        self.wager_results[wager_key] = "WON"
+                        # Payout: 2x the wager amount
+                        payout = u256(int(wager_amount_str) * 2)
+                        _EOARecipient(Address(sender_addr)).emit_transfer(value=payout)
+                    else:
+                        self.wager_results[wager_key] = "LOST"
+                        # Funds are burned / kept by the contract
+                    
+                    # Clear active wager
+                    self.active_wagers[wager_key] = ""
                     
             except Exception:
                 pass
