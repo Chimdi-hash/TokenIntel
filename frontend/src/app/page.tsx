@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import TokenDashboard, { TokenData } from '@/components/TokenDashboard';
 import ChartBackground from '@/components/ChartBackground';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xeB341FDD0FFB75cdd5298D3e9D93f989Ea00825c";
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x627e85110585Db962Bf23F3B6238bc1333172511";
 
 // Note: ABI is no longer required because genlayer-js handles GenLayer Simulator interactions dynamically!
 
