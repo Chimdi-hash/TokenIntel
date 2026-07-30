@@ -3,6 +3,13 @@ from genlayer import *
 import typing
 import json
 
+@gl.evm.contract_interface
+class _EOARecipient:
+    class View:
+        pass
+    class Write:
+        pass
+
 class TokenIntel(gl.Contract):
     # Persistent state variable to store token analysis results as JSON strings
     token_analysis: TreeMap[str, str]
@@ -18,13 +25,6 @@ class TokenIntel(gl.Contract):
         self.whitelisted_tokens = TreeMap()
         self.wager_results = TreeMap()
         self.active_wagers = TreeMap()
-
-@gl.evm.contract_interface
-class _EOARecipient:
-    class View:
-        pass
-    class Write:
-        pass
 
     @gl.public.write.payable
     def place_wager(self, ticker: str, predicted_sentiment: str) -> None:
