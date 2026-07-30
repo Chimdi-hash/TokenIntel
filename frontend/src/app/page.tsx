@@ -8,6 +8,7 @@ import { Search, Wallet, Loader2, LogOut, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import TokenDashboard, { TokenData } from '@/components/TokenDashboard';
 import ChartBackground from '@/components/ChartBackground';
+import BetHistory, { BetHistoryItem } from '@/components/BetHistory';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x7db85E29F1114e11630AAB3A8E9CC32c92d6E308";
 
@@ -42,6 +43,21 @@ export default function Home() {
   const [wagerSentiment, setWagerSentiment] = useState<string>('BULLISH');
   const [wagerAmount, setWagerAmount] = useState<number>(1);
   const [balance, setBalance] = useState<string>('0');
+  const [betHistory, setBetHistory] = useState<BetHistoryItem[]>([]);
+
+  // Load history from localStorage when wallet connects
+  React.useEffect(() => {
+    if (address) {
+      const stored = localStorage.getItem(`tokenintel_history_${address}`);
+      if (stored) {
+        try {
+          setBetHistory(JSON.parse(stored));
+        } catch(e) {}
+      }
+    } else {
+      setBetHistory([]);
+    }
+  }, [address]);
 
   const connectWallet = async () => {
     if (typeof window !== 'undefined' && (window as any).ethereum) {
@@ -160,6 +176,20 @@ export default function Home() {
         if (String(receipt.status) === 'reverted' || receipt.status === 0) {
           throw new Error('The wager transaction reverted. Please try again.');
         }
+
+        // Successfully placed wager! Save it as PENDING in local history.
+        const newBet: BetHistoryItem = {
+          id: Date.now().toString(),
+          ticker,
+          wagerAmount,
+          sentiment: wagerSentiment,
+          result: 'PENDING',
+          timestamp: Date.now()
+        };
+        const updatedHistory = [newBet, ...betHistory];
+        setBetHistory(updatedHistory);
+        localStorage.setItem(`tokenintel_history_${address}`, JSON.stringify(updatedHistory));
+
       } catch (err: any) {
         if (err.message?.toLowerCase().includes('revert')) throw err;
       }
@@ -236,6 +266,22 @@ export default function Home() {
         }) as string;
         parsedData.wager_result = wagerResult;
         parsedData.wager_amount = wagerAmount;
+
+        // Update local history if the bet was resolved (WON or LOST)
+        if (wagerResult === 'WON' || wagerResult === 'LOST') {
+          const stored = localStorage.getItem(`tokenintel_history_${address}`);
+          if (stored) {
+            let hist: BetHistoryItem[] = JSON.parse(stored);
+            // Find the most recent pending bet for this ticker
+            const pendingIndex = hist.findIndex(b => b.ticker === ticker && b.result === 'PENDING');
+            if (pendingIndex !== -1) {
+              hist[pendingIndex].result = wagerResult;
+              setBetHistory(hist);
+              localStorage.setItem(`tokenintel_history_${address}`, JSON.stringify(hist));
+            }
+          }
+        }
+
       } catch (wagerErr) {
         console.warn('Could not fetch wager result', wagerErr);
       }
@@ -424,6 +470,13 @@ export default function Home() {
       {tokenData && (
         <div className="w-full z-20 mt-12 mb-20 relative px-4">
           <TokenDashboard data={tokenData} />
+        </div>
+      )}
+
+      {/* Bet History */}
+      {betHistory.length > 0 && (
+        <div className="w-full z-20">
+          <BetHistory history={betHistory} />
         </div>
       )}
 
