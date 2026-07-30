@@ -353,7 +353,7 @@ export default function Home() {
         <motion.div variants={itemVariants} className="w-full max-w-2xl space-y-4 pt-6">
           <div className="w-full flex flex-col sm:flex-row gap-4 justify-center pb-4">
              <div className="flex flex-col gap-2">
-               <label className="text-xs text-slate-400 uppercase tracking-widest font-semibold text-left">Your AI Prediction</label>
+               <label className="text-xs text-slate-400 uppercase tracking-widest font-semibold text-left">Your Prediction</label>
                <select 
                  className="bg-black/40 backdrop-blur-xl border border-white/10 py-2.5 px-4 rounded-xl text-sm uppercase text-white outline-none focus:border-indigo-500/50 cursor-pointer"
                  value={wagerSentiment}
