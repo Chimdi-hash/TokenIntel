@@ -392,7 +392,7 @@ export default function Home() {
           variants={itemVariants} 
           className="text-lg md:text-xl text-slate-300 max-w-2xl font-light leading-relaxed"
         >
-          Powered by <strong className="text-white font-semibold">Genlayer</strong>. Input any token ticker, and our AI validators will fetch, analyze, and reach consensus on its real-time market data, sentiment, and risks.
+          Powered by <strong className="text-white font-semibold">Genlayer</strong>. Predict the AI sentiment of any token and wager GEN on your intuition. Our decentralized AI validators will fetch live market data, reach consensus on the token's outlook, and automatically distribute payouts on-chain.
         </motion.p>
 
         {/* Input Controls */}
