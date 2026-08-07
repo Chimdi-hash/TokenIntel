@@ -147,7 +147,10 @@ class TokenIntel(gl.Contract):
                         _EOARecipient(Address(sender_addr)).emit_transfer(value=payout)
                     else:
                         self.wager_results[wager_key] = "LOST"
-                        # Funds are burned / kept by the contract
+                        # Burn the funds by sending them to the zero address
+                        burn_amount = u256(int(wager_amount_str))
+                        zero_address = "0x0000000000000000000000000000000000000000"
+                        _EOARecipient(Address(zero_address)).emit_transfer(value=burn_amount)
                     
                     # Clear active wager
                     self.active_wagers[wager_key] = ""
