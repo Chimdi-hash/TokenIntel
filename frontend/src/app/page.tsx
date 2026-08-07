@@ -10,7 +10,7 @@ import TokenDashboard, { TokenData } from '@/components/TokenDashboard';
 import ChartBackground from '@/components/ChartBackground';
 import BetHistory, { BetHistoryItem } from '@/components/BetHistory';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x7db85E29F1114e11630AAB3A8E9CC32c92d6E308";
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x2daDe0389a185381A9Ff5D1640670aF06be5d845";
 
 // Note: ABI is no longer required because genlayer-js handles GenLayer Simulator interactions dynamically!
 
